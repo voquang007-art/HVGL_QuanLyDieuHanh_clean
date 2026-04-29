@@ -1,0 +1,2472 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .wp-tabs { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .wp-tab {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:150px; padding:10px 14px; border-radius:10px;
+    text-decoration:none; font-weight:700; border:1px solid #cbd5e1;
+    background:#fff; color:#0f172a;
+  }
+  .wp-tab.is-active,
+  .wp-tab.is-active:visited,
+  .wp-tab.is-active:hover,
+  .wp-tab.is-active:focus {
+    background:#0b4f9c !important;
+    color:#fff !important;
+    border-color:#0b4f9c !important;
+  }
+  .wp-tab.is-active * {
+    color:#fff !important;
+  }
+  .wp-subtabs { display:flex; gap:8px; margin:12px 0 16px 0; flex-wrap:wrap; }
+  .wp-card {
+    border:1px solid #dbe4ee; border-radius:12px; padding:14px; background:#fff;
+    box-shadow:0 1px 3px rgba(15, 23, 42, 0.06); margin-bottom:14px;
+  }
+  .section-title { margin:0 0 10px 0; font-size:20px; font-weight:800; color:#0f172a; }
+  .section-subtitle { margin:0 0 12px 0; color:#475569; }
+  .alert-box { padding:12px 14px; border-radius:10px; margin-bottom:12px; font-weight:600; }
+  .alert-success { background:#ecfdf5; color:#166534; border:1px solid #bbf7d0; }
+  .alert-error { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
+  .muted-note { color:#64748b; font-size:13px; }
+  .info-list { margin:0; padding-left:18px; color:#334155; }
+  .info-list li { margin-bottom:6px; }
+  .form-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+  .form-grid .full { grid-column:1 / -1; }
+  .field label { display:block; margin-bottom:6px; font-weight:700; color:#0f172a; }
+  .field input, .field select {
+    width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px;
+    box-sizing:border-box; background:#fff;
+  }
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    border:none; border-radius:8px; padding:9px 14px; cursor:pointer; text-decoration:none;
+    font-weight:700;
+  }
+  .btn-primary { background:#0b4f9c; color:#fff; }
+  .btn-secondary { background:#e2e8f0; color:#0f172a; }
+  .btn-warning { background:#b45309; color:#fff; }
+  .table-wrap { overflow:auto; }
+  .table { width:100%; border-collapse:collapse; }
+  .table th, .table td { border:1px solid #dbe4ee; padding:9px 10px; vertical-align:top; }
+  .assign-matrix th, .assign-matrix td { padding:6px; }
+  .assign-matrix input { min-width:110px; font-size:12px; }
+  .assign-subhead { background:#f8fafc; font-size:12px; font-weight:700; text-align:center; }
+  .assign-staff { font-size:12px; color:#334155; font-weight:700; margin-bottom:4px; display:block; }
+  .table th { background:#eff6ff; color:#0f172a; text-align:left; }
+  .placeholder-box {
+    border:1px dashed #94a3b8; border-radius:12px; padding:18px; background:#f8fafc; color:#334155;
+  }
+  .metric-boxes { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; }
+  .metric {
+    border:1px solid #dbe4ee; border-radius:12px; padding:12px; background:#fff;
+  }
+  .summary-badge {
+    display:inline-block; border-radius:999px; padding:4px 10px; font-size:12px; font-weight:700;
+    background:#dbeafe; color:#1d4ed8;
+  }
+  .wp-tab-badge {
+    display:inline-block;
+    min-width:18px;
+    padding:1px 6px;
+    margin-left:6px;
+    border-radius:10px;
+    background:#dc2626;
+    color:#fff !important;
+    font-size:12px;
+    font-weight:700;
+    text-align:center;
+    line-height:18px;
+  }
+  .user-picker-dropdown {
+    position: relative;
+  }
+  .user-picker-toggle {
+    width: 100%;
+    min-height: 54px;
+    border: 1px solid #2563eb;
+    border-radius: 12px;
+    background: #2563eb;
+    color: #fff;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    box-sizing: border-box;
+    line-height: 1.25;
+  }
+  .user-picker-toggle.has-value {
+    background: #0b4f9c;
+    border-color: #0b4f9c;
+  }
+  .user-picker-panel {
+    display: none;
+    position: fixed;
+    z-index: 3000;
+    width: 460px;
+    max-width: calc(100vw - 24px);
+    max-height: 78vh;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.22);
+    padding: 12px;
+  }
+  .user-picker-dropdown.open .user-picker-panel {
+    display: block;
+  }
+  .user-picker-search {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+    font-size: 14px;
+  }
+  .user-picker-list {
+    max-height: 44vh;
+    overflow: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+    padding: 6px;
+  }
+  .user-picker-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 8px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .user-picker-option:hover {
+    background: #f8fafc;
+  }
+  .user-picker-option.is-blocked {
+    color: #b91c1c;
+    font-weight: 700;
+  }
+  .user-picker-option input[type="checkbox"] {
+    margin-top: 2px;
+    flex: 0 0 auto;
+  }
+  .user-picker-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .user-picker-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 90px;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 14px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .user-picker-action-btn.btn-apply {
+    background: #166534;
+    color: #fff;
+  }
+  .user-picker-action-btn.btn-cancel {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+  .user-picker-help {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.45;
+  }
+  .user-picker-help strong {
+    color: #0f172a;
+  }
+  .approval-matrix-title {
+    text-align: center;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #0f172a;
+    margin: 4px 0 2px 0;
+  }
+  .approval-matrix-subtitle {
+    text-align: center;
+    font-weight: 800;
+    color: #334155;
+    margin: 0 0 12px 0;
+  }
+  .approval-matrix-note {
+    margin: 0 0 12px 0;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .approval-overview-table {
+    min-width: 1180px;
+    font-size: 12px;
+  }
+  .approval-overview-table th {
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .approval-overview-table td {
+    text-align: center;
+    vertical-align: middle;
+    min-width: 92px;
+    white-space: pre-line;
+  }
+  .approval-overview-table .sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #e2f0d9;
+    text-align: left;
+    font-weight: 800;
+    min-width: 170px;
+  }
+  .approval-overview-table .sticky-col-2 {
+    position: sticky;
+    left: 170px;
+    z-index: 2;
+    background: #e2f0d9;
+    text-align: left;
+    font-weight: 800;
+    min-width: 190px;
+  }
+  .approval-overview-table .day-head {
+    background: #d9534f;
+    color: #111827;
+    font-weight: 900;
+  }
+  .approval-overview-table .sub-head {
+    background: #d9ead3;
+    color: #0f172a;
+    font-weight: 900;
+  }
+  .approval-overview-table .cell-bs {
+    background: #cfe2f3;
+    font-weight: 700;
+  }
+  .approval-overview-table .cell-dd {
+    background: #fff2cc;
+    font-weight: 700;
+  }
+  .approval-overview-table .cell-closed {
+    background: #f3f4f6;
+    color: #991b1b;
+    font-weight: 900;
+    text-align: center;
+  }
+  .adjusted-cell-mark {
+    display: block;
+    margin-top: 4px;
+    color: #b45309;
+    font-size: 11px;
+    font-weight: 900;
+  }
+  .adjustment-box {
+    border: 1px solid #f59e0b;
+    border-radius: 12px;
+    padding: 14px;
+    background: #fffbeb;
+    margin-top: 12px;
+  }
+  .approval-empty-matrix {
+    border: 1px dashed #94a3b8;
+    border-radius: 12px;
+    padding: 16px;
+    background: #f8fafc;
+    color: #334155;
+    font-weight: 700;
+  }
+</style>
+
+{% if message %}
+  <div class="alert-box alert-success">{{ message }}</div>
+{% endif %}
+{% if error %}
+  <div class="alert-box alert-error">{{ error }}</div>
+{% endif %}
+<script>
+  window.__wpApprovedLeaveUserIdsByDate = {{ approved_leave_user_ids_by_date | tojson }};
+  window.__wpApprovedRosterPlusOneUserIdsByDate = {{ approved_roster_plus_one_user_ids_by_date | tojson }};
+  window.__wpBlockedUserIdsByDate = {{ blocked_user_ids_by_date | tojson }};
+  window.__wpSelectedPositionType = "{{ selected_position_type or '' }}";
+</script>
+
+<div class="wp-tabs">
+  <a href="/leave-schedule" class="wp-tab">Đến Tab "Nghỉ phép - Phân trực"</a>
+  <a href="/work-positions?main_tab=leave_roster&block_tab={{ block_tab }}&sub_tab=handoff&scope_unit_id={{ selected_scope_unit_id }}" class="wp-tab {% if main_tab == 'leave_roster' %}is-active{% endif %}">
+    Kiểm tra nhanh dữ liệu nghỉ
+  </a>
+</div>
+
+<div class="wp-card">
+  <h2 class="section-title">Vị trí làm việc</h2>
+  <p class="section-subtitle">
+    Phạm vi hiện hành: <strong>{{ scope_display }}</strong> -
+    <strong>{{ block_label }}</strong>
+  </p>
+
+  {% if scope_options and scope_options|length > 1 %}
+  <form method="get" action="/work-positions" style="margin:12px 0;">
+    <input type="hidden" name="main_tab" value="{{ main_tab }}">
+    <input type="hidden" name="block_tab" value="{{ block_tab }}">
+    <input type="hidden" name="sub_tab" value="{{ sub_tab }}">
+    <input type="hidden" name="target_week" value="{{ target_week or '' }}">
+    <input type="hidden" name="selected_position_type" value="{{ selected_position_type or '' }}">
+    <div class="form-grid">
+      <div class="field full">
+        <label for="scope_unit_id">Chọn phạm vi/vai trò đang thao tác</label>
+        <select name="scope_unit_id" id="scope_unit_id" onchange="this.form.submit()">
+          {% for opt in scope_options %}
+          <option value="{{ opt.selected_scope_unit_id }}" {% if opt.selected_scope_unit_id == selected_scope_unit_id %}selected{% endif %}>
+            {{ opt.option_label }}
+          </option>
+          {% endfor %}
+        </select>
+        <div class="muted-note">
+          Dùng cho tài khoản kiêm nhiệm nhiều vai trò/đơn vị, ví dụ vừa BGĐ vừa Trưởng khoa.
+        </div>
+      </div>
+    </div>
+  </form>
+  {% endif %}
+
+  <ul class="info-list">
+    <li>Module này đọc dữ liệu nghỉ đã duyệt từ <strong>Tab "Nghỉ phép - Phân trực"</strong> để phục vụ phân vị trí.</li>
+    <li>Chức năng <strong>Phân vị trí</strong> chỉ cho phép các vị trí có thẩm quyền thực hiện.</li>
+    <li>Phê duyệt tổng hợp phân vị trí phòng khám Bệnh viện dành cho <strong>Trưởng phòng / Phó phòng Kế hoạch tổng hợp</strong>. Các người dùng khác có quyền xem</li>
+  </ul>
+</div>
+
+{% if main_tab == 'positions' %}
+  <div class="wp-subtabs">
+    <a href="/work-positions?main_tab=positions&block_tab={{ block_tab }}&sub_tab=catalog&scope_unit_id={{ selected_scope_unit_id }}" class="wp-tab {% if sub_tab == 'catalog' %}is-active{% endif %}">Danh mục vị trí</a>
+    <a href="/work-positions?main_tab=positions&block_tab={{ block_tab }}&sub_tab=assign&scope_unit_id={{ selected_scope_unit_id }}" class="wp-tab {% if sub_tab == 'assign' %}is-active{% endif %}">Phân vị trí</a>
+    <a href="/work-positions?main_tab=positions&block_tab={{ block_tab }}&sub_tab=notice&scope_unit_id={{ selected_scope_unit_id }}" class="wp-tab {% if sub_tab == 'notice' %}is-active{% endif %}">Thông báo vị trí</a>
+    <a href="/work-positions?main_tab=positions&block_tab={{ block_tab }}&sub_tab=approve&scope_unit_id={{ selected_scope_unit_id }}" class="wp-tab {% if sub_tab == 'approve' %}is-active{% endif %}">Tổng hợp / phê duyệt</a>
+    {% if can_view_hospital_position_summary %}
+    <a href="/work-positions?main_tab=positions&block_tab=CHUYEN_MON&sub_tab=khth_summary{% if target_week %}&target_week={{ target_week }}{% endif %}&scope_unit_id={{ selected_scope_unit_id }}" class="wp-tab {% if sub_tab == 'khth_summary' %}is-active{% endif %}">
+      Phê duyệt tổng hợp phân vị trí phòng khám Bệnh viện
+      {% if unread_khth_pending_count and unread_khth_pending_count > 0 %}
+        <span class="wp-tab-badge">{{ unread_khth_pending_count }}</span>
+      {% endif %}
+    </a>
+    {% endif %}
+  </div>
+
+  {% if sub_tab == 'catalog' %}
+    <div class="wp-card">
+      <h3 class="section-title">Danh mục vị trí làm việc</h3>
+      <p class="section-subtitle">Danh mục mềm, tạo linh hoạt theo phạm vi đơn vị hiện hành.</p>
+
+      {% if can_manage_catalog %}
+      <form method="post" action="/work-positions/catalog/add">
+        <input type="hidden" name="scope_unit_id" value="{{ selected_scope_unit_id }}">
+        <div class="form-grid">
+          <div class="field">
+            <label for="position_type">Loại vị trí</label>
+            <select name="position_type" id="position_type" required>
+              <option value="">-- Chọn loại --</option>
+              <option value="PHONG_KHAM">Phòng khám</option>
+              <option value="PHONG_DIEU_TRI">Phòng điều trị</option>
+              <option value="QUAY">Quầy</option>
+              <option value="XET_NGHIEM">Xét nghiệm</option>
+              <option value="BAN">Bàn</option>
+              <option value="KHU">Khu</option>
+              <option value="MAY">Máy</option>
+              <option value="VI_TRI_CONG_TAC">Vị trí công tác</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="position_name">Tên vị trí</label>
+            <input type="text" name="position_name" id="position_name" placeholder="Ví dụ: Phòng khám 1, Quầy CSKH 1..." required>
+          </div>
+          <div class="field">
+            <label for="sort_order">Thứ tự hiển thị</label>
+            <input type="number" name="sort_order" id="sort_order" value="0">
+          </div>
+          <div class="field">
+            <label>Phạm vi tạo</label>
+            <input type="text" value="{{ scope_display }}" disabled>
+          </div>
+          <div class="field full">
+            <button type="submit" class="btn btn-primary">Tạo danh mục vị trí</button>
+          </div>
+        </div>
+      </form>
+      {% else %}
+      <div class="alert-box alert-error">Tài khoản hiện tại chưa có quyền tạo danh mục vị trí làm việc.</div>
+      {% endif %}
+    </div>
+
+    <div class="wp-card">
+      <h3 class="section-title">Danh sách danh mục hiện có</h3>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Loại</th>
+              <th>Tên vị trí</th>
+              <th>Đơn vị áp dụng</th>
+              <th>Khối</th>
+              <th>Thứ tự</th>
+              <th>Trạng thái</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in catalog_rows %}
+            <tr>
+              <td>{{ item.position_type }}</td>
+              <td>{{ item.position_name }}</td>
+              <td>{{ item.apply_unit_name or item.owner_unit_name or '-' }}</td>
+              <td>{{ item.block_code or '-' }}</td>
+              <td>{{ item.sort_order or 0 }}</td>
+              <td>{% if item.is_active == 1 %}Đang dùng{% else %}Ngưng dùng{% endif %}</td>
+              <td>
+                {% if can_manage_catalog %}
+                <form method="post" action="/work-positions/catalog/toggle" onsubmit="return confirm('Xác nhận đổi trạng thái danh mục vị trí này?');">
+                  <input type="hidden" name="scope_unit_id" value="{{ selected_scope_unit_id }}">
+                  <input type="hidden" name="catalog_id" value="{{ item.id }}">
+                  <button type="submit" class="btn btn-warning">{% if item.is_active == 1 %}Ngưng dùng{% else %}Mở lại{% endif %}</button>
+                </form>
+                {% else %}
+                -
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7">Chưa có danh mục vị trí làm việc.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  {% elif sub_tab == 'assign' %}
+    <div class="wp-card">
+      <h3 class="section-title">Phân vị trí theo tuần</h3>
+      {% if can_assign_positions %}
+      {% set clinic_rows = catalog_rows | selectattr("position_type", "equalto", selected_position_type) | list %}
+      {% set counter_rows = catalog_rows | selectattr("position_layout", "equalto", "COUNTER_MULTI") | list %}
+      {% set lab_rows = catalog_rows | selectattr("position_layout", "equalto", "LAB_WEEKLY") | list %}
+      {% set simple_rows = catalog_rows | selectattr("position_layout", "equalto", "SIMPLE_WEEKLY") | list %}
+
+      <form method="get" action="/work-positions">
+        <input type="hidden" name="main_tab" value="positions">
+        <input type="hidden" name="block_tab" value="{{ block_tab }}">
+        <input type="hidden" name="sub_tab" value="assign">
+        <input type="hidden" name="scope_unit_id" value="{{ selected_scope_unit_id }}">
+        <div class="form-grid">
+          <div class="field">
+            <label for="target_week">Chọn tuần phân vị trí</label>
+            <input type="week" name="target_week" id="target_week" value="{{ target_week }}">
+          </div>
+          <div class="field">
+            <label for="selected_position_type">Chọn loại vị trí để thao tác</label>
+            <select name="selected_position_type" id="selected_position_type">
+              <option value="">-- Chọn loại vị trí --</option>
+              {% for pt in assign_position_types %}
+                <option value="{{ pt }}" {% if selected_position_type == pt %}selected{% endif %}>{{ pt }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn btn-secondary" style="background:#facc15;color:#0b4f9c;border:1px solid #eab308;">
+              Thực hiện phân vị trí
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div class="metric-boxes" style="margin-top:12px;">
+        <div class="metric">
+          <div class="muted-note">Số danh mục vị trí</div>
+          <div class="number">{{ catalog_rows|length }}</div>
+        </div>
+        <div class="metric">
+          <div class="muted-note">Số bản phân vị trí theo tuần</div>
+          <div class="number">{{ plan_rows|length }}</div>
+        </div>
+        <div class="metric">
+          <div class="muted-note">Dữ liệu nghỉ đã duyệt đang đọc được</div>
+          <div class="number">{{ leave_contract.approved_leave_count }}</div>
+        </div>
+      </div>
+
+      <div class="wp-card" style="margin-top:12px;">
+        <p class="section-subtitle">
+          {% if target_week_label %}
+            Phạm vi tuần đang thao tác: <strong>{{ target_week_label }}</strong>. Chọn <strong>loại vị trí</strong> nào thì hệ thống chỉ hiển thị đúng <strong>bảng phân công tương ứng</strong> để tránh rối UI.
+          {% else %}
+            Chọn tuần và loại vị trí trước khi lưu phân vị trí.
+          {% endif %}
+        </p>
+
+        <form method="post" action="/work-positions/plans/save-weekly">
+          <input type="hidden" name="scope_unit_id" value="{{ selected_scope_unit_id }}">
+          <input type="hidden" name="selected_position_type" value="{{ selected_position_type or '' }}">
+          <div class="form-grid">
+            <div class="field">
+              <label for="target_week_form">Tuần phân vị trí</label>
+              <input type="week" name="target_week" id="target_week_form" value="{{ target_week }}" required>
+            </div>
+            <div class="field">
+              <label>Phạm vi hiện hành</label>
+              <input type="text" value="{{ scope_display }}" disabled>
+            </div>
+          </div>
+
+          {% if not selected_position_type %}
+          <div class="placeholder-box" style="margin-top:12px;">
+            Chọn <strong>loại vị trí</strong> để hiển thị đúng bảng phân công tương ứng.
+          </div>
+
+          {% elif selected_position_type in ['PHONG_KHAM', 'PHONG_DIEU_TRI'] %}
+            {% if clinic_rows %}
+            <div class="wp-card" style="margin-top:12px;">
+              <h4 class="section-title" style="font-size:18px;">
+                {% if selected_position_type == 'PHONG_DIEU_TRI' %}Bảng tổng hợp phân công theo phòng điều trị{% else %}Bảng tổng hợp phân công theo phòng khám{% endif %}
+              </h4>
+              <p class="section-subtitle">
+                Áp dụng cho các khoa lâm sàng. Mỗi ngày tách <strong>Sáng/Chiều</strong> và <strong>BS/ĐD</strong>.
+                {% if selected_position_type == 'PHONG_DIEU_TRI' %}
+                Vị trí này không chặn giữa các phòng điều trị khác nhau, nhưng vẫn bị chặn chéo với <strong>PHONG_KHAM</strong> cùng ngày/cùng buổi.
+                {% endif %}
+              </p>
+              <div class="table-wrap" style="margin-top:12px;">
+                <table class="table assign-matrix">
+                  <thead>
+                    <tr>
+                      <th rowspan="2">Đơn vị áp dụng</th>
+                      <th rowspan="2">Tên vị trí</th>
+                      {% for day in week_days %}
+                      <th colspan="4" style="text-align:center;">{{ day.display }} - {{ day.label }}</th>
+                      {% endfor %}
+                    </tr>
+                    <tr>
+                      {% for day in week_days %}
+                      <th class="assign-subhead">Sáng-BS</th>
+                      <th class="assign-subhead">Sáng-ĐD</th>
+                      <th class="assign-subhead">Chiều-BS</th>
+                      <th class="assign-subhead">Chiều-ĐD</th>
+                      {% endfor %}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for item in clinic_rows %}
+                    <tr>
+                      <td>{{ item.apply_unit_name or item.owner_unit_name or '-' }}</td>
+                      <td>{{ item.position_name or '-' }}</td>
+                      {% for day in week_days %}
+                        {% set k1 = item.id ~ '|' ~ day.date ~ '|SANG|BS' %}
+                        {% set k2 = item.id ~ '|' ~ day.date ~ '|SANG|DD' %}
+                        {% set k3 = item.id ~ '|' ~ day.date ~ '|CHIEU|BS' %}
+                        {% set k4 = item.id ~ '|' ~ day.date ~ '|CHIEU|DD' %}
+
+                        <td>
+                          {% set blocked_ids = blocked_user_ids_by_date.get(day.date, []) %}
+                          {% set selected_ids = week_assignment_map.get(k1, {}).get('assigned_user_ids_csv', '').split(',') if week_assignment_map.get(k1, {}).get('assigned_user_ids_csv', '') else [] %}
+                          <div class="user-picker-box" data-work-date="{{ day.date }}" data-session-code="SANG">
+                            <input type="hidden" name="entry_catalog_ids" value="{{ item.id }}">
+                            <input type="hidden" name="entry_work_dates" value="{{ day.date }}">
+                            <input type="hidden" name="entry_session_codes" value="SANG">
+                            <input type="hidden" name="entry_staff_groups" value="BS">
+                            <input type="hidden" class="js-assigned-user-ids" name="assigned_user_ids" value="{{ week_assignment_map.get(k1, {}).get('assigned_user_ids_csv', '') }}">
+                            <input type="hidden" class="js-assigned-user-names" name="assigned_user_names" value="{{ week_assignment_map.get(k1, {}).get('assigned_user_name', '') }}">
+                            <div class="user-picker-dropdown">
+                              <button type="button" class="user-picker-toggle" onclick="toggleUserPicker(this)">Chọn user</button>
+                              <div class="user-picker-panel">
+                                <input type="text" class="user-picker-search" placeholder="Tìm user..." oninput="filterUserPicker(this)">
+                                <div class="user-picker-list">
+                                  {% for u in assignable_users.bs %}
+                                  <label class="user-picker-option {% if u.id in blocked_ids %}is-blocked{% endif %}">
+                                    <input
+                                      type="checkbox"
+                                      class="js-user-check"
+                                      value="{{ u.id }}"
+                                      data-user-name="{{ u.name }}"
+                                      onchange="syncUserPicker(this.closest('.user-picker-box'))"
+                                      {% if u.id in selected_ids %}checked{% endif %}
+                                      {% if u.id in blocked_ids and u.id not in selected_ids %}disabled{% endif %}
+                                    >
+                                    <span>{{ u.name }} - {{ u.role_label }}{% if u.id in blocked_ids %} (bị chặn){% endif %}</span>
+                                  </label>
+                                  {% endfor %}
+                                </div>
+                              </div>
+                            </div>
+                            <div class="user-picker-help"><strong>BS:</strong> dropdown nhiều chọn, hiển thị các vị trí Bác sĩ, BGĐ, Trưởng khoa, Phó khoa.</div>
+                            <input type="hidden" name="entry_notes" value="{{ week_assignment_map.get(k1, {}).get('notes', '') }}">
+                          </div>
+                        </td>
+
+                        <td>
+                          {% set blocked_ids = blocked_user_ids_by_date.get(day.date, []) %}
+                          {% set selected_ids = week_assignment_map.get(k2, {}).get('assigned_user_ids_csv', '').split(',') if week_assignment_map.get(k2, {}).get('assigned_user_ids_csv', '') else [] %}
+                          <div class="user-picker-box" data-work-date="{{ day.date }}" data-session-code="SANG">
+                            <input type="hidden" name="entry_catalog_ids" value="{{ item.id }}">
+                            <input type="hidden" name="entry_work_dates" value="{{ day.date }}">
+                            <input type="hidden" name="entry_session_codes" value="SANG">
+                            <input type="hidden" name="entry_staff_groups" value="DD">
+                            <input type="hidden" class="js-assigned-user-ids" name="assigned_user_ids" value="{{ week_assignment_map.get(k2, {}).get('assigned_user_ids_csv', '') }}">
+                            <input type="hidden" class="js-assigned-user-names" name="assigned_user_names" value="{{ week_assignment_map.get(k2, {}).get('assigned_user_name', '') }}">
+                            <div class="user-picker-dropdown">
+                              <button type="button" class="user-picker-toggle" onclick="toggleUserPicker(this)">Chọn user</button>
+                              <div class="user-picker-panel">
+                                <input type="text" class="user-picker-search" placeholder="Tìm user..." oninput="filterUserPicker(this)">
+                                <div class="user-picker-list">
+                                  {% for u in assignable_users.dd %}
+                                  <label class="user-picker-option {% if u.id in blocked_ids %}is-blocked{% endif %}">
+                                    <input
+                                      type="checkbox"
+                                      class="js-user-check"
+                                      value="{{ u.id }}"
+                                      data-user-name="{{ u.name }}"
+                                      onchange="syncUserPicker(this.closest('.user-picker-box'))"
+                                      {% if u.id in selected_ids %}checked{% endif %}
+                                      {% if u.id in blocked_ids and u.id not in selected_ids %}disabled{% endif %}
+                                    >
+                                    <span>{{ u.name }} - {{ u.role_label }}{% if u.id in blocked_ids %} (bị chặn){% endif %}</span>
+                                  </label>
+                                  {% endfor %}
+                                </div>
+                              </div>
+                            </div>
+                            <div class="user-picker-help"><strong>ĐD:</strong> dropdown nhiều chọn, hiển thị các vị trí Điều dưỡng và Thư ký y khoa. User nghỉ duyệt hoặc bị chặn do lịch trực hôm trước hiện đỏ; user đã được phân ở vị trí khác cùng buổi cũng bị chặn.</div>
+                            <input type="hidden" name="entry_notes" value="{{ week_assignment_map.get(k2, {}).get('notes', '') }}">
+                          </div>
+                        </td>
+
+                        <td>
+                          {% set blocked_ids = blocked_user_ids_by_date.get(day.date, []) %}
+                          {% set selected_ids = week_assignment_map.get(k3, {}).get('assigned_user_ids_csv', '').split(',') if week_assignment_map.get(k3, {}).get('assigned_user_ids_csv', '') else [] %}
+                          <div class="user-picker-box" data-work-date="{{ day.date }}" data-session-code="CHIEU">
+                            <input type="hidden" name="entry_catalog_ids" value="{{ item.id }}">
+                            <input type="hidden" name="entry_work_dates" value="{{ day.date }}">
+                            <input type="hidden" name="entry_session_codes" value="CHIEU">
+                            <input type="hidden" name="entry_staff_groups" value="BS">
+                            <input type="hidden" class="js-assigned-user-ids" name="assigned_user_ids" value="{{ week_assignment_map.get(k3, {}).get('assigned_user_ids_csv', '') }}">
+                            <input type="hidden" class="js-assigned-user-names" name="assigned_user_names" value="{{ week_assignment_map.get(k3, {}).get('assigned_user_name', '') }}">
+                            <div class="user-picker-dropdown">
+                              <button type="button" class="user-picker-toggle" onclick="toggleUserPicker(this)">Chọn user</button>
+                              <div class="user-picker-panel">
+                                <input type="text" class="user-picker-search" placeholder="Tìm user..." oninput="filterUserPicker(this)">
+                                <div class="user-picker-list">
+                                  {% for u in assignable_users.bs %}
+                                  <label class="user-picker-option {% if u.id in blocked_ids %}is-blocked{% endif %}">
+                                    <input
+                                      type="checkbox"
+                                      class="js-user-check"
+                                      value="{{ u.id }}"
+                                      data-user-name="{{ u.name }}"
+                                      onchange="syncUserPicker(this.closest('.user-picker-box'))"
+                                      {% if u.id in selected_ids %}checked{% endif %}
+                                      {% if u.id in blocked_ids and u.id not in selected_ids %}disabled{% endif %}
+                                    >
+                                    <span>{{ u.name }} - {{ u.role_label }}{% if u.id in blocked_ids %} (bị chặn){% endif %}</span>
+                                  </label>
+                                  {% endfor %}
+                                </div>
+                              </div>
+                            </div>
+                            <div class="user-picker-help"><strong>BS:</strong> dropdown nhiều chọn, hiển thị các vị trí Bác sĩ, BGĐ, Trưởng khoa, Phó khoa.</div>
+                            <input type="hidden" name="entry_notes" value="{{ week_assignment_map.get(k3, {}).get('notes', '') }}">
+                          </div>
+                        </td>
+
+                        <td>
+                          {% set blocked_ids = blocked_user_ids_by_date.get(day.date, []) %}
+                          {% set selected_ids = week_assignment_map.get(k4, {}).get('assigned_user_ids_csv', '').split(',') if week_assignment_map.get(k4, {}).get('assigned_user_ids_csv', '') else [] %}
+                          <div class="user-picker-box" data-work-date="{{ day.date }}" data-session-code="CHIEU">
+                            <input type="hidden" name="entry_catalog_ids" value="{{ item.id }}">
+                            <input type="hidden" name="entry_work_dates" value="{{ day.date }}">
+                            <input type="hidden" name="entry_session_codes" value="CHIEU">
+                            <input type="hidden" name="entry_staff_groups" value="DD">
+                            <input type="hidden" class="js-assigned-user-ids" name="assigned_user_ids" value="{{ week_assignment_map.get(k4, {}).get('assigned_user_ids_csv', '') }}">
+                            <input type="hidden" class="js-assigned-user-names" name="assigned_user_names" value="{{ week_assignment_map.get(k4, {}).get('assigned_user_name', '') }}">
+                            <div class="user-picker-dropdown">
+                              <button type="button" class="user-picker-toggle" onclick="toggleUserPicker(this)">Chọn user</button>
+                              <div class="user-picker-panel">
+                                <input type="text" class="user-picker-search" placeholder="Tìm user..." oninput="filterUserPicker(this)">
+                                <div class="user-picker-list">
+                                  {% for u in assignable_users.dd %}
+                                  <label class="user-picker-option {% if u.id in blocked_ids %}is-blocked{% endif %}">
+                                    <input
+                                      type="checkbox"
+                                      class="js-user-check"
+                                      value="{{ u.id }}"
+                                      data-user-name="{{ u.name }}"
+                                      onchange="syncUserPicker(this.closest('.user-picker-box'))"
+                                      {% if u.id in selected_ids %}checked{% endif %}
+                                      {% if u.id in blocked_ids and u.id not in selected_ids %}disabled{% endif %}
+                                    >
+                                    <span>{{ u.name }} - {{ u.role_label }}{% if u.id in blocked_ids %} (bị chặn){% endif %}</span>
+                                  </label>
+                                  {% endfor %}
+                                </div>
+                              </div>
+                            </div>
+                            <div class="user-picker-help"><strong>ĐD:</strong> dropdown nhiều chọn, hiển thị các vị trí Điều dưỡng và Thư ký y khoa. User nghỉ duyệt hoặc bị chặn do lịch trực hôm trước hiện đỏ; user đã được phân ở vị trí khác cùng buổi cũng bị chặn.</div>
+                            <input type="hidden" name="entry_notes" value="{{ week_assignment_map.get(k4, {}).get('notes', '') }}">
+                          </div>
+                        </td>
+                      {% endfor %}
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% else %}
+            <div class="placeholder-box" style="margin-top:12px;">Chưa có danh mục loại <strong>{{ selected_position_type }}</strong>.</div>
+            {% endif %}
+
+          {% elif selected_position_type == 'QUAY' %}
+            {% if counter_rows %}
+            <div class="wp-card" style="margin-top:12px;">
+              <h4 class="section-title" style="font-size:18px;">Bảng phân công tuần - QUẦY</h4>
+              <p class="section-subtitle">Mỗi ca có thể phân <strong>từ 2 người trở lên</strong>. Nhập nhiều user trong cùng ô, mỗi người một dòng.</p>
+              <div class="table-wrap" style="margin-top:12px;">
+                <table class="table assign-matrix">
+                  <thead>
+                    <tr>
+                      <th rowspan="2">Đơn vị áp dụng</th>
+                      <th rowspan="2">Tên vị trí</th>
+                      {% for day in week_days %}
+                      <th colspan="2" style="text-align:center;">{{ day.display }} - {{ day.label }}</th>
+                      {% endfor %}
+                    </tr>
+                    <tr>
+                      {% for day in week_days %}
+                      <th class="assign-subhead">Sáng</th>
+                      <th class="assign-subhead">Chiều</th>
+                      {% endfor %}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for item in counter_rows %}
+                    <tr>
+                      <td>{{ item.apply_unit_name or item.owner_unit_name or '-' }}</td>
+                      <td>{{ item.position_name or '-' }}</td>
+                      {% for day in week_days %}
+                        {% set k1 = item.id ~ '|' ~ day.date ~ '|SANG|GENERAL_MULTI' %}
+                        {% set k2 = item.id ~ '|' ~ day.date ~ '|CHIEU|GENERAL_MULTI' %}
+                        <td>
+                          {% set blocked_ids = blocked_user_ids_by_date.get(day.date, []) %}
+                          {% set selected_ids = week_assignment_map.get(k1, {}).get('assigned_user_ids_csv', '').split(',') if week_assignment_map.get(k1, {}).get('assigned_user_ids_csv', '') else [] %}
+                          <div class="user-picker-box" data-work-date="{{ day.date }}" data-session-code="SANG">
+                            <input type="hidden" name="entry_catalog_ids" value="{{ item.id }}">
+                            <input type="hidden" name="entry_work_dates" value="{{ day.date }}">
+                            <input type="hidden" name="entry_session_codes" value="SANG">
+                            <input type="hidden" name="entry_staff_groups" value="GENERAL_MULTI">
+                            <input type="hidden" class="js-assigned-user-ids" name="assigned_user_ids" value="{{ week_assignment_map.get(k1, {}).get('assigned_user_ids_csv', '') }}">
+                            <input type="hidden" class="js-assigned-user-names" name="assigned_user_names" value="{{ week_assignment_map.get(k1, {}).get('assigned_user_name', '') }}">
+                            <div class="user-picker-dropdown">
+                              <button type="button" class="user-picker-toggle" onclick="toggleUserPicker(this)">Chọn user</button>
+                              <div class="user-picker-panel">
+                                <input type="text" class="user-picker-search" placeholder="Tìm user..." oninput="filterUserPicker(this)">
+                                <div class="user-picker-list">
+                                  {% for u in assignable_users.all %}
+                                  <label class="user-picker-option {% if u.id in blocked_ids %}is-blocked{% endif %}">
+                                    <input
+                                      type="checkbox"
+                                      class="js-user-check"
+                                      value="{{ u.id }}"
+                                      data-user-name="{{ u.name }}"
+                                      onchange="syncUserPicker(this.closest('.user-picker-box'))"
+                                      {% if u.id in selected_ids %}checked{% endif %}
+                                      {% if u.id in blocked_ids and u.id not in selected_ids %}disabled{% endif %}
+                                    >
+                                    <span>{{ u.name }} - {{ u.role_label }}{% if u.id in blocked_ids %} (bị chặn){% endif %}</span>
+                                  </label>
+                                  {% endfor %}
+                                </div>
+                              </div>
+                            </div>
+                            <div class="user-picker-help">Dropdown nhiều chọn. User nghỉ duyệt hoặc bị chặn do lịch trực hôm trước hiện đỏ; user đã được phân ở vị trí khác cùng buổi cũng bị chặn.</div>
+                            <input type="hidden" name="entry_notes" value="{{ week_assignment_map.get(k1, {}).get('notes', '') }}">
+                          </div>
+                        </td>
+						
+
+                        <td>
+                          {% set blocked_ids = blocked_user_ids_by_date.get(day.date, []) %}
+                          {% set selected_ids = week_assignment_map.get(k2, {}).get('assigned_user_ids_csv', '').split(',') if week_assignment_map.get(k2, {}).get('assigned_user_ids_csv', '') else [] %}
+                          <div class="user-picker-box" data-work-date="{{ day.date }}" data-session-code="CHIEU">
+                            <input type="hidden" name="entry_catalog_ids" value="{{ item.id }}">
+                            <input type="hidden" name="entry_work_dates" value="{{ day.date }}">
+                            <input type="hidden" name="entry_session_codes" value="CHIEU">
+                            <input type="hidden" name="entry_staff_groups" value="GENERAL_MULTI">
+                            <input type="hidden" class="js-assigned-user-ids" name="assigned_user_ids" value="{{ week_assignment_map.get(k2, {}).get('assigned_user_ids_csv', '') }}">
+                            <input type="hidden" class="js-assigned-user-names" name="assigned_user_names" value="{{ week_assignment_map.get(k2, {}).get('assigned_user_name', '') }}">
+                            <div class="user-picker-dropdown">
+                              <button type="button" class="user-picker-toggle" onclick="toggleUserPicker(this)">Chọn user</button>
+                              <div class="user-picker-panel">
+                                <input type="text" class="user-picker-search" placeholder="Tìm user..." oninput="filterUserPicker(this)">
+                                <div class="user-picker-list">
+                                  {% for u in assignable_users.all %}
+                                  <label class="user-picker-option {% if u.id in blocked_ids %}is-blocked{% endif %}">
+                                    <input
+                                      type="checkbox"
+                                      class="js-user-check"
+                                      value="{{ u.id }}"
+                                      data-user-name="{{ u.name }}"
+                                      onchange="syncUserPicker(this.closest('.user-picker-box'))"
+                                      {% if u.id in selected_ids %}checked{% endif %}
+                                      {% if u.id in blocked_ids and u.id not in selected_ids %}disabled{% endif %}
+                                    >
+                                    <span>{{ u.name }} - {{ u.role_label }}{% if u.id in blocked_ids %} (bị chặn){% endif %}</span>
+                                  </label>
+                                  {% endfor %}
+                                </div>
+                              </div>
+                            </div>
+                            <div class="user-picker-help">Dropdown nhiều chọn. User nghỉ duyệt hoặc bị chặn do lịch trực hôm trước hiện đỏ; user đã được phân ở vị trí khác cùng buổi cũng bị chặn.</div>
+                            <input type="hidden" name="entry_notes" value="{{ week_assignment_map.get(k2, {}).get('notes', '') }}">
+                          </div>
+                        </td>
+                      {% endfor %}
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% else %}
+            <div class="placeholder-box" style="margin-top:12px;">Chưa có danh mục loại <strong>QUAY</strong>.</div>
+            {% endif %}
+
+          {% elif selected_position_type == 'XET_NGHIEM' %}
+            {% if lab_rows %}
+            <div class="wp-card" style="margin-top:12px;">
+              <h4 class="section-title" style="font-size:18px;">Bảng phân công tuần - XÉT NGHIỆM</h4>
+              <p class="section-subtitle">Mẫu này bám cách phân công ở ảnh 7 và 8. Mỗi ô cho phép nhập nhiều dòng để thể hiện kiểu <strong>Chính / Phụ / Tầng 2 / hỗ trợ...</strong></p>
+              <div class="table-wrap" style="margin-top:12px;">
+                <table class="table assign-matrix">
+                  <thead>
+                    <tr>
+                      <th>Tên vị trí xét nghiệm</th>
+                      {% for day in week_days %}
+                      <th style="text-align:center;">{{ day.display }} - {{ day.label }}</th>
+                      {% endfor %}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for item in lab_rows %}
+                    <tr>
+                      <td>{{ item.position_name or '-' }}</td>
+                      {% for day in week_days %}
+                        {% set k1 = item.id ~ '|' ~ day.date ~ '|ALLDAY|LAB' %}
+                        <td>
+                          {% set blocked_ids = blocked_user_ids_by_date.get(day.date, []) %}
+                          {% set selected_ids = week_assignment_map.get(k1, {}).get('assigned_user_ids_csv', '').split(',') if week_assignment_map.get(k1, {}).get('assigned_user_ids_csv', '') else [] %}
+                          <div class="user-picker-box" data-work-date="{{ day.date }}" data-session-code="ALLDAY">
+                            <input type="hidden" name="entry_catalog_ids" value="{{ item.id }}">
+                            <input type="hidden" name="entry_work_dates" value="{{ day.date }}">
+                            <input type="hidden" name="entry_session_codes" value="ALLDAY">
+                            <input type="hidden" name="entry_staff_groups" value="LAB">
+                            <input type="hidden" class="js-assigned-user-ids" name="assigned_user_ids" value="{{ week_assignment_map.get(k1, {}).get('assigned_user_ids_csv', '') }}">
+                            <input type="hidden" class="js-assigned-user-names" name="assigned_user_names" value="{{ week_assignment_map.get(k1, {}).get('assigned_user_name', '') }}">
+                            <div class="user-picker-dropdown">
+                              <button type="button" class="user-picker-toggle" onclick="toggleUserPicker(this)">Chọn user</button>
+                              <div class="user-picker-panel">
+                                <input type="text" class="user-picker-search" placeholder="Tìm user..." oninput="filterUserPicker(this)">
+                                <div class="user-picker-list">
+                                  {% for u in assignable_users.all %}
+                                  <label class="user-picker-option {% if u.id in blocked_ids %}is-blocked{% endif %}">
+                                    <input
+                                      type="checkbox"
+                                      class="js-user-check"
+                                      value="{{ u.id }}"
+                                      data-user-name="{{ u.name }}"
+                                      onchange="syncUserPicker(this.closest('.user-picker-box'))"
+                                      {% if u.id in selected_ids %}checked{% endif %}
+                                      {% if u.id in blocked_ids and u.id not in selected_ids %}disabled{% endif %}
+                                    >
+                                    <span>{{ u.name }} - {{ u.role_label }}{% if u.id in blocked_ids %} (bị chặn){% endif %}</span>
+                                  </label>
+                                  {% endfor %}
+                                </div>
+                              </div>
+                            </div>
+                            <div class="user-picker-help">Dropdown nhiều chọn cho vị trí xét nghiệm. User nghỉ duyệt hoặc bị chặn do lịch trực hôm trước hiện đỏ; vì là ALLDAY nên hệ thống vẫn siết trùng ca theo logic backend hiện có.</div>
+                            <input type="hidden" name="entry_notes" value="{{ week_assignment_map.get(k1, {}).get('notes', '') }}">
+                          </div>
+                        </td>
+                      {% endfor %}
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% else %}
+            <div class="placeholder-box" style="margin-top:12px;">Chưa có danh mục loại <strong>XET_NGHIEM</strong>.</div>
+            {% endif %}
+
+          {% else %}
+            {% if simple_rows %}
+            <div class="wp-card" style="margin-top:12px;">
+              <h4 class="section-title" style="font-size:18px;">Bảng phân công tuần - {{ selected_position_type }}</h4>
+              <p class="section-subtitle">Mẫu đơn giản theo ngày và ca sáng/chiều.</p>
+              <div class="table-wrap" style="margin-top:12px;">
+                <table class="table assign-matrix">
+                  <thead>
+                    <tr>
+                      <th rowspan="2">Đơn vị áp dụng</th>
+                      <th rowspan="2">Tên vị trí</th>
+                      {% for day in week_days %}
+                      <th colspan="2" style="text-align:center;">{{ day.display }} - {{ day.label }}</th>
+                      {% endfor %}
+                    </tr>
+                    <tr>
+                      {% for day in week_days %}
+                      <th class="assign-subhead">Sáng</th>
+                      <th class="assign-subhead">Chiều</th>
+                      {% endfor %}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for item in simple_rows %}
+                    <tr>
+                      <td>{{ item.apply_unit_name or item.owner_unit_name or '-' }}</td>
+                      <td>{{ item.position_name or '-' }}</td>
+                      {% for day in week_days %}
+                        {% set k1 = item.id ~ '|' ~ day.date ~ '|SANG|GENERAL' %}
+                        {% set k2 = item.id ~ '|' ~ day.date ~ '|CHIEU|GENERAL' %}
+                        <td>
+                          {% set blocked_ids = blocked_user_ids_by_date.get(day.date, []) %}
+                          {% set selected_ids = week_assignment_map.get(k1, {}).get('assigned_user_ids_csv', '').split(',') if week_assignment_map.get(k1, {}).get('assigned_user_ids_csv', '') else [] %}
+                          <div class="user-picker-box" data-work-date="{{ day.date }}" data-session-code="SANG">
+                            <input type="hidden" name="entry_catalog_ids" value="{{ item.id }}">
+                            <input type="hidden" name="entry_work_dates" value="{{ day.date }}">
+                            <input type="hidden" name="entry_session_codes" value="SANG">
+                            <input type="hidden" name="entry_staff_groups" value="GENERAL">
+                            <input type="hidden" class="js-assigned-user-ids" name="assigned_user_ids" value="{{ week_assignment_map.get(k1, {}).get('assigned_user_ids_csv', '') }}">
+                            <input type="hidden" class="js-assigned-user-names" name="assigned_user_names" value="{{ week_assignment_map.get(k1, {}).get('assigned_user_name', '') }}">
+                            <div class="user-picker-dropdown">
+                              <button type="button" class="user-picker-toggle" onclick="toggleUserPicker(this)">Chọn user</button>
+                              <div class="user-picker-panel">
+                                <input type="text" class="user-picker-search" placeholder="Tìm user..." oninput="filterUserPicker(this)">
+                                <div class="user-picker-list">
+                                  {% for u in assignable_users.all %}
+                                  <label class="user-picker-option {% if u.id in blocked_ids %}is-blocked{% endif %}">
+                                    <input
+                                      type="checkbox"
+                                      class="js-user-check"
+                                      value="{{ u.id }}"
+                                      data-user-name="{{ u.name }}"
+                                      onchange="syncUserPicker(this.closest('.user-picker-box'))"
+                                      {% if u.id in selected_ids %}checked{% endif %}
+                                      {% if u.id in blocked_ids and u.id not in selected_ids %}disabled{% endif %}
+                                    >
+                                    <span>{{ u.name }} - {{ u.role_label }}{% if u.id in blocked_ids %} (bị chặn){% endif %}</span>
+                                  </label>
+                                  {% endfor %}
+                                </div>
+                              </div>
+                            </div>
+                            <div class="user-picker-help">Dropdown nhiều chọn. User nghỉ duyệt hoặc bị chặn do lịch trực hôm trước hiện đỏ.</div>
+                            <input type="hidden" name="entry_notes" value="{{ week_assignment_map.get(k1, {}).get('notes', '') }}">
+                          </div>
+                        </td>
+						
+                        <td>
+                          {% set blocked_ids = blocked_user_ids_by_date.get(day.date, []) %}
+                          {% set selected_ids = week_assignment_map.get(k2, {}).get('assigned_user_ids_csv', '').split(',') if week_assignment_map.get(k2, {}).get('assigned_user_ids_csv', '') else [] %}
+                          <div class="user-picker-box" data-work-date="{{ day.date }}" data-session-code="CHIEU">
+                            <input type="hidden" name="entry_catalog_ids" value="{{ item.id }}">
+                            <input type="hidden" name="entry_work_dates" value="{{ day.date }}">
+                            <input type="hidden" name="entry_session_codes" value="CHIEU">
+                            <input type="hidden" name="entry_staff_groups" value="GENERAL">
+                            <input type="hidden" class="js-assigned-user-ids" name="assigned_user_ids" value="{{ week_assignment_map.get(k2, {}).get('assigned_user_ids_csv', '') }}">
+                            <input type="hidden" class="js-assigned-user-names" name="assigned_user_names" value="{{ week_assignment_map.get(k2, {}).get('assigned_user_name', '') }}">
+                            <div class="user-picker-dropdown">
+                              <button type="button" class="user-picker-toggle" onclick="toggleUserPicker(this)">Chọn user</button>
+                              <div class="user-picker-panel">
+                                <input type="text" class="user-picker-search" placeholder="Tìm user..." oninput="filterUserPicker(this)">
+                                <div class="user-picker-list">
+                                  {% for u in assignable_users.all %}
+                                  <label class="user-picker-option {% if u.id in blocked_ids %}is-blocked{% endif %}">
+                                    <input
+                                      type="checkbox"
+                                      class="js-user-check"
+                                      value="{{ u.id }}"
+                                      data-user-name="{{ u.name }}"
+                                      onchange="syncUserPicker(this.closest('.user-picker-box'))"
+                                      {% if u.id in selected_ids %}checked{% endif %}
+                                      {% if u.id in blocked_ids and u.id not in selected_ids %}disabled{% endif %}
+                                    >
+                                    <span>{{ u.name }} - {{ u.role_label }}{% if u.id in blocked_ids %} (bị chặn){% endif %}</span>
+                                  </label>
+                                  {% endfor %}
+                                </div>
+                              </div>
+                            </div>
+                            <div class="user-picker-help">Dropdown nhiều chọn. User nghỉ duyệt hoặc bị chặn do lịch trực hôm trước hiện đỏ.</div>
+                            <input type="hidden" name="entry_notes" value="{{ week_assignment_map.get(k2, {}).get('notes', '') }}">
+                          </div>
+                        </td>
+                      {% endfor %}
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% else %}
+            <div class="placeholder-box" style="margin-top:12px;">Chưa có danh mục loại <strong>{{ selected_position_type }}</strong>.</div>
+            {% endif %}
+          {% endif %}
+
+          <div style="margin-top:12px;">
+            <button type="submit" class="btn btn-primary">Lưu phân vị trí theo tuần</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="wp-card" style="margin-top:12px; padding:0; box-shadow:none; border:none; background:transparent;">
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tuần</th>
+                <th>Đơn vị / phạm vi</th>
+                <th>Trạng thái</th>
+                <th>Số ô đã lưu</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in plan_rows %}
+              <tr>
+                <td>{{ item.week_label or item.target_date or '-' }}</td>
+                <td>{{ item.scope_label or '-' }}</td>
+                <td>{{ item.status_label or item.status or '-' }}</td>
+                <td>{{ item.item_count or 0 }}</td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="4">Chưa có bản phân vị trí theo tuần nào trong phạm vi hiện hành.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% else %}
+      <div class="alert-box alert-error">Chức năng này chỉ mở cho các vị trí phải xét duyệt khi đăng ký tài khoản.</div>
+      {% endif %}
+    </div>
+  {% elif sub_tab == 'notice' %}
+    <div class="wp-card">
+      <h3 class="section-title">Thông báo vị trí làm việc</h3>
+      <p class="section-subtitle">
+        Thông báo được tách theo 2 nhóm: <strong>Phân vị trí</strong> và <strong>Điều chỉnh</strong>. Mỗi nhóm lọc theo tuần riêng.
+      </p>
+
+      <div style="margin-bottom:12px;">
+        <form method="post" action="/work-positions/notices/read-all" onsubmit="return confirm('Xác nhận đánh dấu đã đọc toàn bộ thông báo vị trí?');">
+          <input type="hidden" name="scope_unit_id" value="{{ selected_scope_unit_id }}">
+          <button type="submit" class="btn btn-secondary">Đánh dấu đã đọc toàn bộ</button>
+        </form>
+      </div>
+
+      <div class="wp-card" style="margin-top:12px;">
+        <h4 class="section-title" style="font-size:18px;">Thông báo phân vị trí</h4>
+
+        <form method="get" action="/work-positions" style="margin:12px 0;">
+          <input type="hidden" name="main_tab" value="positions">
+          <input type="hidden" name="block_tab" value="{{ block_tab }}">
+          <input type="hidden" name="sub_tab" value="notice">
+          <input type="hidden" name="scope_unit_id" value="{{ selected_scope_unit_id }}">
+          <input type="hidden" name="notice_adjustment_week" value="{{ notice_adjustment_week }}">
+          <div class="form-grid">
+            <div class="field">
+              <label for="notice_plan_week">Chọn tuần phân vị trí</label>
+              <input type="week" name="notice_plan_week" id="notice_plan_week" value="{{ notice_plan_week }}">
+            </div>
+            <div class="field">
+              <label>&nbsp;</label>
+              <button type="submit" class="btn btn-secondary">Xem thông báo phân vị trí</button>
+            </div>
+          </div>
+        </form>
+
+        <p class="section-subtitle">
+          Tuần đang xem: <strong>{{ notice_plan_week_label or '-' }}</strong>
+        </p>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Thời gian</th>
+                <th>Tiêu đề</th>
+                <th>Tuần / ngày</th>
+                <th>Nội dung</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in plan_notice_rows %}
+                <tr>
+                  <td>{{ item.created_at or '-' }}</td>
+                  <td>{{ item.title or '-' }}</td>
+                  <td>{{ item.target_week_label or item.target_date or '-' }}</td>
+                  <td>{{ item.message or '-' }}</td>
+                  <td>
+                    {% if item.is_unread %}
+                      <span class="summary-badge" style="background:#fee2e2;color:#b91c1c;">Chưa đọc</span>
+                    {% else %}
+                      <span class="summary-badge" style="background:#dcfce7;color:#166534;">Đã đọc</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if item.is_unread %}
+                      <form method="post" action="/work-positions/notices/read">
+                        <input type="hidden" name="scope_unit_id" value="{{ selected_scope_unit_id }}">
+                        <input type="hidden" name="notice_id" value="{{ item.id }}">
+                        <button type="submit" class="btn btn-secondary">Đánh dấu đã đọc</button>
+                      </form>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="6">Chưa có thông báo phân vị trí trong tuần này.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="wp-card" style="margin-top:12px;">
+        <h4 class="section-title" style="font-size:18px;">Thông báo điều chỉnh vị trí</h4>
+
+        <form method="get" action="/work-positions" style="margin:12px 0;">
+          <input type="hidden" name="main_tab" value="positions">
+          <input type="hidden" name="block_tab" value="{{ block_tab }}">
+          <input type="hidden" name="sub_tab" value="notice">
+          <input type="hidden" name="scope_unit_id" value="{{ selected_scope_unit_id }}">
+          <input type="hidden" name="notice_plan_week" value="{{ notice_plan_week }}">
+          <div class="form-grid">
+            <div class="field">
+              <label for="notice_adjustment_week">Chọn tuần điều chỉnh</label>
+              <input type="week" name="notice_adjustment_week" id="notice_adjustment_week" value="{{ notice_adjustment_week }}">
+            </div>
+            <div class="field">
+              <label>&nbsp;</label>
+              <button type="submit" class="btn btn-secondary">Xem thông báo điều chỉnh</button>
+            </div>
+          </div>
+        </form>
+
+        <p class="section-subtitle">
+          Tuần đang xem: <strong>{{ notice_adjustment_week_label or '-' }}</strong>
+        </p>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Thời gian</th>
+                <th>Tiêu đề</th>
+                <th>Tuần / ngày</th>
+                <th>Nội dung</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in adjustment_notice_rows %}
+                <tr>
+                  <td>{{ item.created_at or '-' }}</td>
+                  <td>{{ item.title or '-' }}</td>
+                  <td>{{ item.target_week_label or item.target_date or '-' }}</td>
+                  <td>{{ item.message or '-' }}</td>
+                  <td>
+                    {% if item.is_unread %}
+                      <span class="summary-badge" style="background:#fee2e2;color:#b91c1c;">Chưa đọc</span>
+                    {% else %}
+                      <span class="summary-badge" style="background:#dcfce7;color:#166534;">Đã đọc</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if item.is_unread %}
+                      <form method="post" action="/work-positions/notices/read">
+					    <input type="hidden" name="scope_unit_id" value="{{ selected_scope_unit_id }}">
+                        <input type="hidden" name="notice_id" value="{{ item.id }}">
+                        <button type="submit" class="btn btn-secondary">Đánh dấu đã đọc</button>
+                      </form>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="6">Chưa có thông báo điều chỉnh trong tuần này.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  {% elif sub_tab == 'approve' %}
+    <div class="wp-card">
+      <h3 class="section-title">Tổng hợp / phê duyệt cấp đơn vị</h3>
+      <p class="section-subtitle">
+        {% if block_tab == 'HANH_CHINH' %}
+          Khối hành chính chỉ thực hiện <strong>duyệt cấp đơn vị</strong>.
+        {% else %}
+          Khối chuyên môn duyệt cấp đơn vị trước. Chỉ các bản <strong>PHÒNG KHÁM</strong> và <strong>XÉT NGHIỆM</strong> mới chuyển tiếp lên KHTH.
+        {% endif %}
+      </p>
+
+      <form method="get" action="/work-positions" style="margin:12px 0;">
+        <input type="hidden" name="main_tab" value="positions">
+        <input type="hidden" name="block_tab" value="{{ block_tab }}">
+        <input type="hidden" name="sub_tab" value="approve">
+		<input type="hidden" name="scope_unit_id" value="{{ selected_scope_unit_id }}">
+        <div class="form-grid">
+          <div class="field">
+            <label for="approve_target_week">Chọn tuần để xem Bảng tổng hợp phân vị trí</label>
+            <input type="week" name="target_week" id="approve_target_week" value="{{ target_week }}">
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn btn-secondary">Xem bảng tổng hợp phân vị trí</button>
+            <a
+              class="btn btn-primary"
+              style="margin-left:8px;"
+              href="/work-positions/export/unit-matrix.xlsx?block_tab={{ block_tab }}&target_week={{ target_week }}&scope_unit_id={{ selected_scope_unit_id }}"
+            >
+              Xuất Excel Bảng tổng hợp đơn vị
+            </a>
+          </div>
+        </div>
+      </form>
+
+
+      <div class="wp-card" style="margin-top:12px;border-color:#93c5fd;background:#eff6ff;">
+        <h4 class="section-title" style="font-size:18px;">Bản phân vị trí của đơn vị trong tuần đang chọn</h4>
+        <p class="section-subtitle">
+          Khu vực này dùng để kiểm tra bản phân vị trí đã lưu và thực hiện phê duyệt cấp đơn vị.
+          Sau khi phê duyệt, bản <strong>PHÒNG KHÁM</strong> và <strong>XÉT NGHIỆM</strong> của khối chuyên môn sẽ chuyển tiếp lên KHTH nếu thuộc diện phê duyệt 2 cấp.
+        </p>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tuần</th>
+                <th>Phạm vi</th>
+                <th>Loại vị trí</th>
+                <th>Người lưu</th>
+                <th>Thời gian lưu</th>
+                <th>Trạng thái</th>
+                <th>Số ô đã lưu</th>
+                <th>Người duyệt đơn vị</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in approve_summary.plan_rows %}
+              <tr>
+                <td>{{ item.week_label or item.target_date or '-' }}</td>
+                <td>{{ item.scope_label or '-' }}</td>
+                <td>{{ item.position_types_label or '-' }}</td>
+                <td>{{ item.submitted_by_name or '-' }}</td>
+                <td>{{ item.updated_at or '-' }}</td>
+                <td>
+                  {% if item.status == 'DRAFT' %}
+                    <span class="summary-badge" style="background:#fef3c7;color:#92400e;">Chờ duyệt cấp đơn vị</span>
+                  {% elif item.status == 'UNIT_APPROVED' %}
+                    <span class="summary-badge" style="background:#dbeafe;color:#1d4ed8;">Đã duyệt cấp đơn vị</span>
+                  {% elif item.status == 'KHTH_APPROVED' %}
+                    <span class="summary-badge" style="background:#dcfce7;color:#166534;">Đã duyệt KHTH</span>
+                  {% elif item.status == 'APPROVED' %}
+                    <span class="summary-badge" style="background:#dcfce7;color:#166534;">Đã duyệt</span>
+                  {% else %}
+                    <span class="summary-badge">{{ item.status_label or item.status or '-' }}</span>
+                  {% endif %}
+                </td>
+                <td>{{ item.item_count or 0 }}</td>
+                <td>{{ item.unit_approved_by_name or item.approved_by_name or '-' }}</td>
+                <td>
+                  <a class="btn btn-secondary" href="/work-positions?main_tab=positions&block_tab={{ block_tab }}&sub_tab=approve&target_week={{ item.week_value }}&scope_unit_id={{ selected_scope_unit_id }}">
+                    Xem Bảng tổng hợp phân vị trí
+                  </a>
+
+                  <a class="btn btn-secondary" href="/work-positions/export/unit-matrix.xlsx?block_tab={{ block_tab }}&target_week={{ item.week_value }}&scope_unit_id={{ selected_scope_unit_id }}" style="margin-left:6px;">
+                    Xuất Excel
+                  </a>
+
+                  {% if item.status == 'DRAFT' %}
+                    <form method="post" action="/work-positions/plans/approve-unit" style="display:inline-block;margin-left:6px;" onsubmit="return confirm('Xác nhận phê duyệt cấp đơn vị cho bản phân vị trí này?');">
+                      <input type="hidden" name="scope_unit_id" value="{{ selected_scope_unit_id }}">
+                      <input type="hidden" name="plan_id" value="{{ item.id }}">
+                      <button type="submit" class="btn btn-primary">Phê duyệt cấp đơn vị</button>
+                    </form>
+                  {% else %}
+                    <span class="muted-note">Không cần duyệt lại</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="9">
+                  Chưa có bản phân vị trí nào của đơn vị trong tuần đang chọn. Kiểm tra lại tuần đang chọn hoặc quay lại tab Phân vị trí để lưu.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+	  
+      <div class="adjustment-box">
+        <h4 class="section-title" style="font-size:18px;">Điều chỉnh lịch phân vị trí sau phê duyệt cấp Bệnh viện</h4>
+        <p class="section-subtitle">
+          Đơn vị lập phiếu điều chỉnh đối với lịch <strong>PHÒNG KHÁM</strong> đã được phê duyệt cấp Bệnh viện.
+          Bản gốc không bị sửa trực tiếp; phiếu điều chỉnh sẽ chuyển lên Trưởng/Phó phòng Kế hoạch - Tổng hợp phê duyệt.
+        </p>
+        <ul class="info-list" style="margin-bottom:12px;">
+          <li><strong>Đóng phòng:</strong> buổi đó hiển thị “Đóng phòng”.</li>
+          <li><strong>Thay bác sĩ:</strong> đổi ô BS, giữ ĐD/TKYK cũ.</li>
+          <li><strong>Thay ĐD/TKYK:</strong> giữ BS cũ, đổi ô ĐD/TKYK.</li>
+          <li><strong>Thay cả hai:</strong> đổi cả BS và ĐD/TKYK.</li>
+        </ul>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tuần</th>
+                <th>Ngày</th>
+                <th>Buổi</th>
+                <th>Phòng khám / tên vị trí</th>
+                <th>BS hiện tại</th>
+                <th>ĐD/TKYK hiện tại</th>
+                <th>Loại điều chỉnh</th>
+                <th>Nhân sự thay thế nếu có</th>
+                <th>Lý do điều chỉnh</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in adjustment_target_rows %}
+                <tr>
+                  <form method="post" action="/work-positions/adjustments/create" onsubmit="return confirm('Xác nhận lập phiếu điều chỉnh và chuyển cấp Bệnh viện phê duyệt?');">
+                    <td>{{ target_week_label or row.target_date or '-' }}</td>
+                    <td>{{ row.work_date or '-' }}</td>
+                    <td>{% if row.session_code == 'SANG' %}Sáng{% elif row.session_code == 'CHIEU' %}Chiều{% else %}{{ row.session_code or '-' }}{% endif %}</td>
+                    <td>{{ row.position_name or '-' }}</td>
+                    <td>{{ row.bs_user_name or '-' }}</td>
+                    <td>{{ row.dd_user_name or '-' }}</td>
+                    <td>
+                      <input type="hidden" name="scope_unit_id" value="{{ selected_scope_unit_id }}">					
+                      <input type="hidden" name="original_plan_id" value="{{ row.plan_id }}">
+                      <input type="hidden" name="catalog_id" value="{{ row.catalog_id }}">
+                      <input type="hidden" name="work_date" value="{{ row.work_date }}">
+                      <input type="hidden" name="session_code" value="{{ row.session_code }}">
+                      <input type="hidden" name="position_name" value="{{ row.position_name }}">
+                      <input type="hidden" name="bs_item_id" value="{{ row.bs_item_id }}">
+                      <input type="hidden" name="dd_item_id" value="{{ row.dd_item_id }}">
+                      <select name="adjust_type" required>
+                        <option value="">-- Chọn loại điều chỉnh --</option>
+                        <option value="CLOSE_ROOM">Không thực hiện / Đóng phòng</option>
+                        <option value="CHANGE_BS">Thay bác sĩ</option>
+                        <option value="CHANGE_DD">Thay điều dưỡng / thư ký y khoa</option>
+                        <option value="CHANGE_BOTH">Thay cả bác sĩ và điều dưỡng / thư ký y khoa</option>
+                      </select>
+                    </td>
+                    <td>
+                      <label class="muted-note">BS mới</label>
+                      <select name="new_bs_user_id">
+                        <option value="">-- Không đổi / bỏ trống --</option>
+                        {% for u in assignable_users.bs %}
+                          <option value="{{ u.id }}">{{ u.name }} - {{ u.role_label }}</option>
+                        {% endfor %}
+                      </select>
+                      <div style="height:6px;"></div>
+                      <label class="muted-note">ĐD/TKYK mới</label>
+                      <select name="new_dd_user_id">
+                        <option value="">-- Không đổi / bỏ trống --</option>
+                        {% for u in assignable_users.dd %}
+                          <option value="{{ u.id }}">{{ u.name }} - {{ u.role_label }}</option>
+                        {% endfor %}
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" name="reason" placeholder="Nhập lý do điều chỉnh" required>
+                    </td>
+                    <td>
+                      <button type="submit" class="btn btn-warning">Lập điều chỉnh</button>
+                    </td>
+                  </form>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="10">
+                    Chưa có phòng khám nào đã được phê duyệt cấp Bệnh viện trong tuần đang xem để lập điều chỉnh.
+                    Vui lòng chọn đúng tuần đã có bản <strong>PHÒNG KHÁM</strong> được phê duyệt cấp Bệnh viện.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="wp-card" style="margin-top:12px;">
+        <div class="approval-matrix-title">Bảng tổng hợp phân vị trí trước phê duyệt</div>
+        <div class="approval-matrix-subtitle">
+          {{ block_label }} - {{ target_week_label or 'Tuần hiện hành' }}
+        </div>
+        <p class="approval-matrix-note">
+          Bảng này hiển thị trước khi duyệt để người có thẩm quyền rà soát tổng thể lịch phân vị trí trong tuần.
+          Nút <strong>Duyệt cấp đơn vị</strong> nằm ở danh sách lịch sử bên dưới, sau khu vực Bảng tổng hợp này.
+        </p>
+
+        {% if approve_summary.matrix_phong_kham.rows %}
+          <div class="wp-card" style="margin-top:12px;">
+            <h4 class="section-title" style="font-size:18px;">Bảng phân vị trí tổng thể - PHÒNG KHÁM</h4>
+            <div class="table-wrap">
+              <table class="table assign-matrix approval-overview-table">
+                <thead>
+                  <tr>
+                    <th rowspan="2" class="sticky-col">Số phòng / Đơn vị</th>
+                    <th rowspan="2" class="sticky-col-2">Phòng khám / Tên vị trí</th>
+                    {% for d in approve_summary.matrix_phong_kham.work_dates %}
+                      <th colspan="4" class="day-head">{{ d }}</th>
+                    {% endfor %}
+                  </tr>
+                  <tr>
+                    {% for d in approve_summary.matrix_phong_kham.work_dates %}
+                      <th class="sub-head">Sáng<br>BS</th>
+                      <th class="sub-head">Sáng<br>ĐD</th>
+                      <th class="sub-head">Chiều<br>BS</th>
+                      <th class="sub-head">Chiều<br>ĐD</th>
+                    {% endfor %}
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in approve_summary.matrix_phong_kham.rows %}
+                    <tr>
+                      <td class="sticky-col">{{ row.apply_unit_name or '-' }}</td>
+                      <td class="sticky-col-2">{{ row.position_name or '-' }}</td>
+                      {% for d in approve_summary.matrix_phong_kham.work_dates %}
+                        <td class="cell-bs">{{ row.cells.get(d ~ '|SANG|BS', {}).get('assigned_user_name', '') or '' }}</td>
+                        <td class="cell-dd">{{ row.cells.get(d ~ '|SANG|DD', {}).get('assigned_user_name', '') or '' }}</td>
+                        <td class="cell-bs">{{ row.cells.get(d ~ '|CHIEU|BS', {}).get('assigned_user_name', '') or '' }}</td>
+                        <td class="cell-dd">{{ row.cells.get(d ~ '|CHIEU|DD', {}).get('assigned_user_name', '') or '' }}</td>
+                      {% endfor %}
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if approve_summary.matrix_phong_dieu_tri.rows %}
+          <div class="wp-card" style="margin-top:12px;">
+            <h4 class="section-title" style="font-size:18px;">Bảng phân vị trí tổng thể - PHÒNG ĐIỀU TRỊ</h4>
+            <div class="table-wrap">
+              <table class="table assign-matrix approval-overview-table">
+                <thead>
+                  <tr>
+                    <th rowspan="2" class="sticky-col">Đơn vị</th>
+                    <th rowspan="2" class="sticky-col-2">Phòng điều trị / Tên vị trí</th>
+                    {% for d in approve_summary.matrix_phong_dieu_tri.work_dates %}
+                      <th colspan="4" class="day-head">{{ d }}</th>
+                    {% endfor %}
+                  </tr>
+                  <tr>
+                    {% for d in approve_summary.matrix_phong_dieu_tri.work_dates %}
+                      <th class="sub-head">Sáng<br>BS</th>
+                      <th class="sub-head">Sáng<br>ĐD</th>
+                      <th class="sub-head">Chiều<br>BS</th>
+                      <th class="sub-head">Chiều<br>ĐD</th>
+                    {% endfor %}
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in approve_summary.matrix_phong_dieu_tri.rows %}
+                    <tr>
+                      <td class="sticky-col">{{ row.apply_unit_name or '-' }}</td>
+                      <td class="sticky-col-2">{{ row.position_name or '-' }}</td>
+                      {% for d in approve_summary.matrix_phong_dieu_tri.work_dates %}
+                        <td class="cell-bs">{{ row.cells.get(d ~ '|SANG|BS', {}).get('assigned_user_name', '') or '' }}</td>
+                        <td class="cell-dd">{{ row.cells.get(d ~ '|SANG|DD', {}).get('assigned_user_name', '') or '' }}</td>
+                        <td class="cell-bs">{{ row.cells.get(d ~ '|CHIEU|BS', {}).get('assigned_user_name', '') or '' }}</td>
+                        <td class="cell-dd">{{ row.cells.get(d ~ '|CHIEU|DD', {}).get('assigned_user_name', '') or '' }}</td>
+                      {% endfor %}
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if approve_summary.matrix_xet_nghiem.rows %}
+          <div class="wp-card" style="margin-top:12px;">
+            <h4 class="section-title" style="font-size:18px;">Bảng phân vị trí tổng thể - XÉT NGHIỆM</h4>
+            <div class="table-wrap">
+              <table class="table assign-matrix approval-overview-table">
+                <thead>
+                  <tr>
+                    <th class="sticky-col">Đơn vị</th>
+                    <th class="sticky-col-2">Vị trí xét nghiệm</th>
+                    {% for d in approve_summary.matrix_xet_nghiem.work_dates %}
+                      <th class="day-head">{{ d }}</th>
+                    {% endfor %}
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in approve_summary.matrix_xet_nghiem.rows %}
+                    <tr>
+                      <td class="sticky-col">{{ row.apply_unit_name or '-' }}</td>
+                      <td class="sticky-col-2">{{ row.position_name or '-' }}</td>
+                      {% for d in approve_summary.matrix_xet_nghiem.work_dates %}
+                        <td class="cell-lab">{{ row.cells.get(d ~ '|ALLDAY|LAB', {}).get('assigned_user_name', '') or '' }}</td>
+                      {% endfor %}
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if not approve_summary.matrix_phong_kham.rows and not approve_summary.matrix_phong_dieu_tri.rows and not approve_summary.matrix_xet_nghiem.rows %}
+          <div class="approval-empty-matrix">
+            Chưa có dữ liệu phân vị trí để hiển thị Bảng phân vị trí tổng thể trong tuần này.
+            Vui lòng kiểm tra lại tuần đang chọn hoặc dữ liệu đã lưu ở Tab <strong>Phân vị trí</strong>.
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="wp-card" style="margin-top:12px;">
+        <h4 class="section-title" style="font-size:18px;">Lịch sử các bản phân vị trí trong tuần</h4>
+
+        <form method="get" action="/work-positions" style="margin:12px 0;">
+          <input type="hidden" name="main_tab" value="positions">
+          <input type="hidden" name="block_tab" value="{{ block_tab }}">
+          <input type="hidden" name="sub_tab" value="approve">
+          <input type="hidden" name="scope_unit_id" value="{{ selected_scope_unit_id }}">
+          <input type="hidden" name="target_week" value="{{ target_week }}">
+          <div class="form-grid">
+            <div class="field">
+              <label>Năm</label>
+              <select name="plan_history_year">
+                {% for y in range(2025, 2031) %}
+                  <option value="{{ y }}" {% if plan_history_year|string == y|string %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label>Tháng</label>
+              <select name="plan_history_month">
+                {% for m in range(1, 13) %}
+                  <option value="{{ m }}" {% if plan_history_month|string == m|string %}selected{% endif %}>{{ "%02d"|format(m) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label>&nbsp;</label>
+              <button type="submit" class="btn btn-secondary">Xem lịch sử</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tuần</th>
+                <th>Phạm vi</th>
+                <th>Trạng thái</th>
+                <th>Loại vị trí</th>
+                <th>Số dòng</th>
+                <th>Người duyệt đơn vị</th>
+                <th>Thời điểm duyệt đơn vị</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in plan_history_rows %}
+                <tr>
+                  <td>{{ item.week_label or item.target_date or '-' }}</td>
+                  <td>{{ item.scope_label or '-' }}</td>
+                  <td>{{ item.status_label or item.status or '-' }}</td>
+                  <td>{{ item.position_types_label or '-' }}</td>
+                  <td>{{ item.item_count or 0 }}</td>
+                  <td>{{ item.unit_approved_by_name or '-' }}</td>
+                  <td>{{ item.unit_approved_at or '-' }}</td>
+                  <td>
+                    <a class="btn btn-secondary" href="/work-positions?main_tab=positions&block_tab={{ block_tab }}&sub_tab=approve&target_week={{ item.week_value }}&plan_history_year={{ plan_history_year }}&plan_history_month={{ plan_history_month }}&scope_unit_id={{ selected_scope_unit_id }}">Xem Bảng tổng hợp phân vị trí</a>
+                    {% if item.status == 'DRAFT' %}
+                      <form method="post" action="/work-positions/plans/approve-unit" style="display:inline-block;margin-left:6px;" onsubmit="return confirm('Xác nhận duyệt cấp đơn vị cho bản phân vị trí này?');">
+                        <input type="hidden" name="scope_unit_id" value="{{ selected_scope_unit_id }}">
+                        <input type="hidden" name="plan_id" value="{{ item.id }}">
+                        <button type="submit" class="btn btn-primary">Duyệt cấp đơn vị</button>
+                      </form>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="8">Chưa có bản phân vị trí nào trong lịch sử.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="adjustment-box">
+        <h4 class="section-title" style="font-size:18px;margin-top:16px;">Lịch sử điều chỉnh của đơn vị</h4>
+        <form method="get" action="/work-positions" style="margin-bottom:12px;">
+          <input type="hidden" name="main_tab" value="positions">
+          <input type="hidden" name="block_tab" value="{{ block_tab }}">
+          <input type="hidden" name="sub_tab" value="approve">
+          <div class="form-grid">
+            <div class="field">
+              <label>Năm</label>
+              <select name="adjustment_year">
+                {% for y in range(2025, 2031) %}
+                  <option value="{{ y }}" {% if adjustment_history_year|string == y|string %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label>Tháng</label>
+              <select name="adjustment_month">
+                {% for m in range(1, 13) %}
+                  <option value="{{ m }}" {% if adjustment_history_month|string == m|string %}selected{% endif %}>{{ "%02d"|format(m) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label>&nbsp;</label>
+              <button type="submit" class="btn btn-secondary">Xem lịch sử điều chỉnh</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tuần</th>
+                <th>Phạm vi</th>
+                <th>Loại điều chỉnh</th>
+                <th>Lý do</th>
+                <th>Người lập</th>
+                <th>Thời điểm lập</th>
+                <th>Trạng thái</th>
+                <th>Người duyệt KHTH</th>
+                <th>Thời điểm duyệt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in unit_adjustment_rows %}
+                <tr>
+                  <td>{{ item.week_label or item.target_date or '-' }}</td>
+                  <td>{{ item.scope_label or '-' }}</td>
+                  <td>{{ item.adjust_type_label or item.adjust_type or '-' }}</td>
+                  <td>{{ item.reason or '-' }}</td>
+                  <td>{{ item.requested_by_name or '-' }}</td>
+                  <td>{{ item.requested_at or '-' }}</td>
+                  <td>{{ item.status_label or item.status or '-' }}</td>
+                  <td>{{ item.khth_approved_by_name or '-' }}</td>
+                  <td>{{ item.khth_approved_at or '-' }}</td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="9">Không có lịch sử điều chỉnh trong tháng đang chọn.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  {% elif sub_tab == 'khth_summary' and can_view_hospital_position_summary %}
+    <div class="wp-card">
+      <h3 class="section-title">Phê duyệt cấp Bệnh viện</h3>
+      <p class="section-subtitle">
+        Khu vực này tổng hợp các bản phân vị trí đã được duyệt cấp đơn vị thuộc loại vị trí <strong>PHÒNG KHÁM</strong> và <strong>XÉT NGHIỆM</strong>.
+        Chỉ <strong>Trưởng phòng / Phó phòng Kế hoạch - Tổng hợp</strong> được phê duyệt cấp Bệnh viện; các vị trí khác chỉ xem.
+      </p>
+      <form method="get" action="/work-positions" style="margin:12px 0;">
+        <input type="hidden" name="main_tab" value="positions">
+        <input type="hidden" name="block_tab" value="CHUYEN_MON">
+        <input type="hidden" name="sub_tab" value="khth_summary">
+        <div class="form-grid">
+          <div class="field">
+            <label for="khth_target_week">Chọn tuần để xem lại tổng hợp phân vị trí cấp Bệnh viện</label>
+            <input type="week" name="target_week" id="khth_target_week" value="{{ target_week }}">
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn btn-secondary">Xem Bảng tổng hợp phân vị trí</button>
+            <a
+              class="btn btn-primary"
+              style="margin-left:8px;"
+              href="/work-positions/export/hospital-clinic-matrix.xlsx?target_week={{ target_week }}"
+            >
+              Xuất Excel Bảng tổng hợp phân vị trí phòng khám Bệnh viện
+            </a>
+          </div>
+        </div>
+      </form>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px 0;">
+        <a
+          class="btn btn-primary"
+          href="/work-positions/export/hospital-clinic-matrix.xml?target_week={{ target_week }}"
+          target="_blank"
+        >
+          Tải XML phòng khám
+        </a>
+        <a
+          class="btn btn-secondary"
+          href="/work-positions/api/hospital-clinic-matrix?target_week={{ target_week }}"
+          target="_blank"
+        >
+          Xem API JSON
+        </a>
+      </div>
+
+      <div class="approval-matrix-title">Bảng tổng hợp phân vị trí trước phê duyệt</div>
+      <div class="approval-matrix-subtitle">
+        {{ target_week_label or 'Tuần hiện hành' }}
+      </div>
+
+      {% if khth_approve_summary and khth_approve_summary.matrix_phong_kham.rows %}
+        <div class="wp-card" style="margin-top:12px;">
+          <h4 class="section-title" style="font-size:18px;">PHÒNG KHÁM</h4>
+          <div class="table-wrap">
+            <table class="table assign-matrix approval-overview-table">
+              <thead>
+                <tr>
+                  <th rowspan="2" class="sticky-col">Đơn vị</th>
+                  <th rowspan="2" class="sticky-col-2">Tên vị trí</th>
+                  {% for d in khth_approve_summary.matrix_phong_kham.work_dates %}
+                    <th colspan="4" class="day-head">{{ d }}</th>
+                  {% endfor %}
+                </tr>
+                <tr>
+                  {% for d in khth_approve_summary.matrix_phong_kham.work_dates %}
+                    <th class="sub-head">Sáng<br>BS</th>
+                    <th class="sub-head">Sáng<br>ĐD/TKYK</th>
+                    <th class="sub-head">Chiều<br>BS</th>
+                    <th class="sub-head">Chiều<br>ĐD/TKYK</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in khth_approve_summary.matrix_phong_kham.rows %}
+                  <tr>
+                    <td class="sticky-col">{{ row.apply_unit_name or '-' }}</td>
+                    <td class="sticky-col-2">{{ row.position_name or '-' }}</td>
+                    {% for d in khth_approve_summary.matrix_phong_kham.work_dates %}
+                      {% set sang_bs = row.cells.get(d ~ '|SANG|BS', {}).get('assigned_user_name', '') %}
+                      {% set sang_dd = row.cells.get(d ~ '|SANG|DD', {}).get('assigned_user_name', '') %}
+                      {% set chieu_bs = row.cells.get(d ~ '|CHIEU|BS', {}).get('assigned_user_name', '') %}
+                      {% set chieu_dd = row.cells.get(d ~ '|CHIEU|DD', {}).get('assigned_user_name', '') %}
+
+                      {% if not sang_bs and not sang_dd %}
+                        <td colspan="2" class="cell-closed">Đóng phòng</td>
+                      {% else %}
+                        <td class="cell-bs">
+                          {{ sang_bs }}
+                          {% if row.cells.get(d ~ '|SANG|BS', {}).get('is_adjusted') %}
+                            <span class="adjusted-cell-mark">Đã điều chỉnh</span>
+                          {% endif %}
+                        </td>
+                        <td class="cell-dd">
+                          {{ sang_dd }}
+                          {% if row.cells.get(d ~ '|SANG|DD', {}).get('is_adjusted') %}
+                            <span class="adjusted-cell-mark">Đã điều chỉnh</span>
+                          {% endif %}
+                        </td>
+                      {% endif %}
+
+                      {% if not chieu_bs and not chieu_dd %}
+                        <td colspan="2" class="cell-closed">Đóng phòng</td>
+                      {% else %}
+                        <td class="cell-bs">
+                          {{ chieu_bs }}
+                          {% if row.cells.get(d ~ '|CHIEU|BS', {}).get('is_adjusted') %}
+                            <span class="adjusted-cell-mark">Đã điều chỉnh</span>
+                          {% endif %}
+                        </td>
+                        <td class="cell-dd">
+                          {{ chieu_dd }}
+                          {% if row.cells.get(d ~ '|CHIEU|DD', {}).get('is_adjusted') %}
+                            <span class="adjusted-cell-mark">Đã điều chỉnh</span>
+                          {% endif %}
+                        </td>
+                      {% endif %}
+                    {% endfor %}
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="adjustment-box">
+        <h4 class="section-title" style="font-size:18px;">Điều chỉnh chờ phê duyệt cấp Bệnh viện</h4>
+        <p class="section-subtitle">
+          Chỉ Trưởng phòng / Phó phòng Kế hoạch - Tổng hợp có quyền phê duyệt điều chỉnh.
+          Các vị trí liên quan chỉ xem.
+        </p>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tuần</th>
+                <th>Phạm vi</th>
+                <th>Loại điều chỉnh</th>
+                <th>Lý do</th>
+                <th>Người lập</th>
+                <th>Thời điểm lập</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in khth_pending_adjustment_rows %}
+                <tr>
+                  <td>{{ item.week_label or item.target_date or '-' }}</td>
+                  <td>{{ item.scope_label or '-' }}</td>
+                  <td>{{ item.adjust_type_label or item.adjust_type or '-' }}</td>
+                  <td>{{ item.reason or '-' }}</td>
+                  <td>{{ item.requested_by_name or '-' }}</td>
+                  <td>{{ item.requested_at or '-' }}</td>
+                  <td>{{ item.status_label or item.status or '-' }}</td>
+                  <td>
+                    {% if can_approve_hospital_position_summary %}
+                      <form method="post" action="/work-positions/adjustments/approve-khth" onsubmit="return confirm('Xác nhận phê duyệt điều chỉnh cấp Bệnh viện?');">
+                        <input type="hidden" name="adjustment_id" value="{{ item.id }}">
+                        <button type="submit" class="btn btn-primary">Phê duyệt điều chỉnh</button>
+                      </form>
+                    {% else %}
+                      <span class="muted-note">Chỉ xem</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="8">Không có phiếu điều chỉnh nào chờ phê duyệt.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <h4 class="section-title" style="font-size:18px;margin-top:16px;">Lịch sử điều chỉnh cấp Bệnh viện</h4>
+        <form method="get" action="/work-positions" style="margin-bottom:12px;">
+          <input type="hidden" name="main_tab" value="positions">
+          <input type="hidden" name="block_tab" value="CHUYEN_MON">
+          <input type="hidden" name="sub_tab" value="khth_summary">
+          <div class="form-grid">
+            <div class="field">
+              <label>Năm</label>
+              <select name="adjustment_year">
+                {% for y in range(2025, 2031) %}
+                  <option value="{{ y }}" {% if adjustment_history_year|string == y|string %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label>Tháng</label>
+              <select name="adjustment_month">
+                {% for m in range(1, 13) %}
+                  <option value="{{ m }}" {% if adjustment_history_month|string == m|string %}selected{% endif %}>{{ "%02d"|format(m) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label>&nbsp;</label>
+              <button type="submit" class="btn btn-secondary">Xem lịch sử điều chỉnh</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tuần</th>
+                <th>Phạm vi</th>
+                <th>Loại điều chỉnh</th>
+                <th>Lý do</th>
+                <th>Người lập</th>
+                <th>Thời điểm lập</th>
+                <th>Trạng thái</th>
+                <th>Người duyệt</th>
+                <th>Thời điểm duyệt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in khth_adjustment_history_rows %}
+                <tr>
+                  <td>{{ item.week_label or item.target_date or '-' }}</td>
+                  <td>{{ item.scope_label or '-' }}</td>
+                  <td>{{ item.adjust_type_label or item.adjust_type or '-' }}</td>
+                  <td>{{ item.reason or '-' }}</td>
+                  <td>{{ item.requested_by_name or '-' }}</td>
+                  <td>{{ item.requested_at or '-' }}</td>
+                  <td>{{ item.status_label or item.status or '-' }}</td>
+                  <td>{{ item.khth_approved_by_name or '-' }}</td>
+                  <td>{{ item.khth_approved_at or '-' }}</td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="9">Không có lịch sử điều chỉnh trong tháng đang chọn.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {% if khth_approve_summary and khth_approve_summary.matrix_xet_nghiem.rows %}
+        <div class="wp-card" style="margin-top:12px;">
+          <h4 class="section-title" style="font-size:18px;">XÉT NGHIỆM</h4>
+          <div class="table-wrap">
+            <table class="table assign-matrix">
+              <thead>
+                <tr>
+                  <th>Đơn vị</th>
+                  <th>Tên vị trí</th>
+                  {% for d in khth_approve_summary.matrix_xet_nghiem.work_dates %}
+                    <th>{{ d }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in khth_approve_summary.matrix_xet_nghiem.rows %}
+                  <tr>
+                    <td>{{ row.apply_unit_name }}</td>
+                    <td>{{ row.position_name }}</td>
+                    {% for d in khth_approve_summary.matrix_xet_nghiem.work_dates %}
+                      <td>{{ row.cells.get(d ~ '|ALLDAY|LAB', {}).get('assigned_user_name', '') }}</td>
+                    {% endfor %}
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endif %}
+
+        <div class="wp-card" style="margin-top:12px;">
+        <h4 class="section-title" style="font-size:18px;">Lịch sử các bản phân vị trí trong tuần</h4>
+
+        <form method="get" action="/work-positions" style="margin:12px 0;">
+          <input type="hidden" name="main_tab" value="positions">
+          <input type="hidden" name="block_tab" value="CHUYEN_MON">
+          <input type="hidden" name="sub_tab" value="khth_summary">
+          <input type="hidden" name="target_week" value="{{ target_week }}">
+          <div class="form-grid">
+            <div class="field">
+              <label>Năm</label>
+              <select name="plan_history_year">
+                {% for y in range(2025, 2031) %}
+                  <option value="{{ y }}" {% if plan_history_year|string == y|string %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label>Tháng</label>
+              <select name="plan_history_month">
+                {% for m in range(1, 13) %}
+                  <option value="{{ m }}" {% if plan_history_month|string == m|string %}selected{% endif %}>{{ "%02d"|format(m) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label>&nbsp;</label>
+              <button type="submit" class="btn btn-secondary">Xem lịch sử</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tuần</th>
+                <th>Phạm vi</th>
+                <th>Trạng thái</th>
+                <th>Số dòng</th>
+                <th>Người duyệt cấp đơn vị</th>
+                <th>Thời điểm duyệt đơn vị</th>
+                <th>Người phê duyệt cấp Bệnh viện</th>
+                <th>Thời điểm phê duyệt cấp Bệnh viện</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in khth_plan_history_rows %}
+                <tr>
+                  <td>{{ item.week_label or item.target_date or '-' }}</td>
+                  <td>{{ item.scope_label or '-' }}</td>
+                  <td>{{ item.status_label or item.status or '-' }}</td>
+                  <td>{{ item.item_count or 0 }}</td>
+                  <td>{{ item.unit_approved_by_name or item.approved_by_name or '-' }}</td>
+                  <td>{{ item.unit_approved_at or '-' }}</td>
+                  <td>{{ item.khth_approved_by_name or '-' }}</td>
+                  <td>{{ item.khth_approved_at or '-' }}</td>
+                  <td>
+                    <a class="btn btn-secondary" href="/work-positions?main_tab=positions&block_tab=CHUYEN_MON&sub_tab=khth_summary&target_week={{ item.week_value }}&plan_history_year={{ plan_history_year }}&plan_history_month={{ plan_history_month }}">Xem Bảng tổng hợp phân vị trí</a>
+                    <a class="btn btn-secondary" href="/work-positions/export/hospital-clinic-matrix.xlsx?target_week={{ item.week_value }}" style="margin-left:6px;">Xuất Excel</a>
+                    {% if item.status == 'UNIT_APPROVED' and can_approve_hospital_position_summary %}
+                      <form method="post" action="/work-positions/plans/approve-khth" style="display:inline-block;margin-left:6px;" onsubmit="return confirm('Xác nhận phê duyệt cấp Bệnh viện và phát thông báo vị trí cho user?');">
+                        <input type="hidden" name="plan_id" value="{{ item.id }}">
+                        <button type="submit" class="btn btn-primary">Phê duyệt cấp Bệnh viện</button>
+                      </form>
+                    {% elif item.status == 'UNIT_APPROVED' %}
+                      <span class="muted-note">Chỉ xem</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="9">Không có bản phân vị trí nào thuộc PHÒNG KHÁM hoặc XÉT NGHIỆM đã duyệt cấp đơn vị trong tuần này.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  {% else %}
+    <div class="wp-card">
+      <h3 class="section-title">Tổng hợp / phê duyệt</h3>
+      <p class="section-subtitle">Duyệt bản phân vị trí đã lưu theo tuần trong phạm vi hiện hành.</p>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Tuần</th>
+              <th>Phạm vi</th>
+              <th>Người lưu</th>
+              <th>Thời gian lưu</th>
+              <th>Trạng thái</th>
+              <th>Số ô đã lưu</th>
+              <th>Người duyệt</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in plan_rows %}
+            <tr>
+              <td>{{ item.week_label or item.target_date or '-' }}</td>
+              <td>{{ item.scope_label or '-' }}</td>
+              <td>{{ item.submitted_by_name or '-' }}</td>
+              <td>{{ item.updated_at or '-' }}</td>
+              <td>
+                {% if item.status == 'APPROVED' %}
+                  <span class="summary-badge" style="background:#dcfce7;color:#166534;">Đã duyệt</span>
+                {% else %}
+                  <span class="summary-badge" style="background:#fef3c7;color:#92400e;">Chờ duyệt</span>
+                {% endif %}
+              </td>
+              <td>{{ item.item_count or 0 }}</td>
+              <td>{{ item.approved_by_name or '-' }}</td>
+              <td>
+                {% if item.status != 'APPROVED' %}
+                <form method="post" action="/work-positions/plans/approve-unit" onsubmit="return confirm('Xác nhận duyệt cấp đơn vị cho bản phân vị trí này và phát thông báo cho các user liên quan?');">
+                  <input type="hidden" name="plan_id" value="{{ item.id }}">
+                  <input type="hidden" name="scope_unit_id" value="{{ selected_scope_unit_id }}">
+                  <button type="submit" class="btn btn-primary">Duyệt cấp đơn vị</button>
+                </form>
+                {% else %}
+                -
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="8">Chưa có bản phân vị trí nào để tổng hợp / phê duyệt.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+{% else %}
+  <div class="wp-subtabs">
+    <a href="/work-positions?main_tab=leave_roster&block_tab={{ block_tab }}&sub_tab=handoff{% if target_date %}&target_date={{ target_date }}{% endif %}" class="wp-tab is-active">Hợp đồng dữ liệu với Nghỉ - Trực</a>
+  </div>
+
+  <div class="wp-card">
+    <h3 class="section-title">Dữ liệu đăng ký nghỉ đã phê duyệt</h3>
+    <form method="get" action="/work-positions">
+      <input type="hidden" name="main_tab" value="leave_roster">
+      <input type="hidden" name="block_tab" value="{{ block_tab }}">
+      <input type="hidden" name="sub_tab" value="handoff">
+      <div class="form-grid">
+        <div class="field">
+          <label for="target_date">Ngày cần đối chiếu</label>
+          <input type="date" name="target_date" id="target_date" value="{{ target_date }}">
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button type="submit" class="btn btn-secondary">Đọc lại hợp đồng dữ liệu</button>
+        </div>
+      </div>
+    </form>
+
+    <div class="metric-boxes" style="margin-top:12px;">
+      <div class="metric">
+        <div class="muted-note">Có kết nối hợp đồng</div>
+        <div class="number">{% if leave_contract.has_contract %}Có{% else %}Chưa{% endif %}</div>
+      </div>
+      <div class="metric">
+        <div class="muted-note">Số lịch nghỉ đã duyệt đọc được</div>
+        <div class="number">{{ leave_contract.approved_leave_count }}</div>
+      </div>
+    </div>
+
+    <p class="section-subtitle" style="margin-top:12px;">{{ leave_contract.message }}</p>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Người dùng</th>
+            <th>Đơn vị</th>
+            <th>Loại nghỉ</th>
+            <th>Từ ngày</th>
+            <th>Đến ngày</th>
+            <th>Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in leave_contract.approved_leave_rows %}
+          {% set leave_status_map = {
+            'PENDING': 'Chờ duyệt',
+            'APPROVED': 'Đã duyệt',
+            'REJECTED': 'Đã từ chối',
+            'CANCELLED': 'Đã hủy',
+            'DRAFT': 'Dự thảo'
+          } %}
+          {% set leave_status_key = (item.status or '')|upper %}
+          <tr>
+            <td>{{ item.user_name or '-' }}</td>
+            <td>{{ item.unit_name or item.group_label or '-' }}</td>
+            <td>{{ item.leave_type or item.symbol or '-' }}</td>
+            <td>{{ item.start_date or '-' }}</td>
+            <td>{{ item.end_date or '-' }}</td>
+            <td>{{ leave_status_map.get(leave_status_key, item.status or '-') }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6">Chưa có dữ liệu nghỉ đã duyệt trong phạm vi hiện hành.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+<script>
+  function getBlockedIdsForDate(dateStr) {
+    const m = window.__wpBlockedUserIdsByDate || {};
+    return Array.isArray(m[dateStr]) ? m[dateStr] : [];
+  }
+
+  function getSelectedUserMapForShift(dateStr, sessionCode, exceptBox) {
+    const out = {};
+    const currentType = String(window.__wpSelectedPositionType || '').trim().toUpperCase();
+
+    document.querySelectorAll('.user-picker-box').forEach(box => {
+      if (exceptBox && box === exceptBox) return;
+
+      const d = String(box.dataset.workDate || '');
+      const s = String(box.dataset.sessionCode || '');
+      if (d !== dateStr || s !== sessionCode) return;
+
+      const boxType = String(box.dataset.positionType || currentType || '').trim().toUpperCase();
+
+      const ids = String(box.querySelector('.js-assigned-user-ids')?.value || '')
+        .split(',')
+        .map(x => x.trim())
+        .filter(Boolean);
+
+      ids.forEach(id => {
+        if (!out[id]) out[id] = [];
+        out[id].push(boxType);
+      });
+    });
+
+    return out;
+  }
+
+  function collectCheckedUsers(box) {
+    const checks = Array.from(box.querySelectorAll('.js-user-check:checked'));
+    const ids = checks.map(el => String(el.value || '').trim()).filter(Boolean);
+    const names = checks.map(el => String(el.dataset.userName || '').trim()).filter(Boolean);
+    return { ids, names };
+  }
+
+  function setCheckedUsers(box, ids) {
+    const idSet = new Set((ids || []).map(x => String(x || '').trim()).filter(Boolean));
+    box.querySelectorAll('.js-user-check').forEach(chk => {
+      chk.checked = idSet.has(String(chk.value || '').trim());
+    });
+  }
+
+  function getCommittedIds(box) {
+    return String(box.querySelector('.js-assigned-user-ids')?.value || '')
+      .split(',')
+      .map(x => x.trim())
+      .filter(Boolean);
+  }
+
+  function getCommittedNames(box) {
+    return String(box.querySelector('.js-assigned-user-names')?.value || '')
+      .split('\n')
+      .map(x => x.trim())
+      .filter(Boolean);
+  }
+
+  function refreshPickerButton(box, draftNames) {
+    const btn = box.querySelector('.user-picker-toggle');
+    if (!btn) return;
+
+    const names = Array.isArray(draftNames) ? draftNames : getCommittedNames(box);
+    btn.textContent = names.length ? names.join('; ') : 'Chọn user';
+    btn.classList.toggle('has-value', names.length > 0);
+  }
+
+  function ensurePickerActions(dropdown) {
+    const panel = dropdown.querySelector('.user-picker-panel');
+    if (!panel) return;
+    if (panel.querySelector('.user-picker-actions')) return;
+
+    const actions = document.createElement('div');
+    actions.className = 'user-picker-actions';
+    actions.innerHTML = `
+      <button type="button" class="user-picker-action-btn btn-cancel" onclick="cancelUserPicker(this)">Hủy</button>
+      <button type="button" class="user-picker-action-btn btn-apply" onclick="applyUserPicker(this)">Chọn</button>
+    `;
+    panel.appendChild(actions);
+  }
+
+  function positionUserPickerPanel(dropdown) {
+    const btn = dropdown.querySelector('.user-picker-toggle');
+    const panel = dropdown.querySelector('.user-picker-panel');
+    if (!btn || !panel) return;
+
+    const rect = btn.getBoundingClientRect();
+    const width = Math.max(420, Math.min(520, window.innerWidth - 24));
+    let left = rect.left;
+    if (left + width > window.innerWidth - 12) {
+      left = window.innerWidth - width - 12;
+    }
+    if (left < 12) left = 12;
+
+    let top = rect.bottom + 8;
+    const estimatedHeight = Math.min(window.innerHeight * 0.78, 520);
+    if (top + estimatedHeight > window.innerHeight - 12) {
+      top = Math.max(12, rect.top - estimatedHeight - 8);
+    }
+
+    panel.style.left = left + 'px';
+    panel.style.top = top + 'px';
+    panel.style.width = width + 'px';
+  }
+
+  function openUserPicker(dropdown) {
+    const box = dropdown.closest('.user-picker-box');
+    if (!box) return;
+
+    ensurePickerActions(dropdown);
+
+    const committedIds = getCommittedIds(box);
+    setCheckedUsers(box, committedIds);
+
+    const committedNames = getCommittedNames(box);
+    box.dataset.draftIds = committedIds.join(',');
+    box.dataset.draftNames = committedNames.join('\n');
+
+    dropdown.classList.add('open');
+    positionUserPickerPanel(dropdown);
+
+    const search = dropdown.querySelector('.user-picker-search');
+    if (search) {
+      search.value = '';
+      filterUserPicker(search);
+      setTimeout(() => search.focus(), 0);
+    }
+  }
+
+  function closeUserPicker(dropdown, keepDraft) {
+    const box = dropdown.closest('.user-picker-box');
+    if (!box) return;
+
+    if (!keepDraft) {
+      const committedIds = getCommittedIds(box);
+      setCheckedUsers(box, committedIds);
+      refreshPickerButton(box);
+    }
+
+    dropdown.classList.remove('open');
+  }
+
+  function syncUserPicker(box) {
+    if (!box) return;
+    const draft = collectCheckedUsers(box);
+    box.dataset.draftIds = draft.ids.join(',');
+    box.dataset.draftNames = draft.names.join('\n');
+    refreshPickerButton(box, draft.names);
+  }
+
+  function applyUserPicker(btn) {
+    const dropdown = btn.closest('.user-picker-dropdown');
+    const box = btn.closest('.user-picker-box');
+    if (!dropdown || !box) return;
+
+    const hiddenIds = box.querySelector('.js-assigned-user-ids');
+    const hiddenNames = box.querySelector('.js-assigned-user-names');
+    const draft = collectCheckedUsers(box);
+
+    if (hiddenIds) hiddenIds.value = draft.ids.join(',');
+    if (hiddenNames) hiddenNames.value = draft.names.join('\n');
+
+    refreshPickerButton(box);
+    dropdown.classList.remove('open');
+    refreshDuplicateLocks();
+  }
+
+  function cancelUserPicker(btn) {
+    const dropdown = btn.closest('.user-picker-dropdown');
+    if (!dropdown) return;
+    closeUserPicker(dropdown, false);
+  }
+
+  function refreshDuplicateLocks() {
+    document.querySelectorAll('.user-picker-box').forEach(box => {
+      const workDate = String(box.dataset.workDate || '');
+      const sessionCode = String(box.dataset.sessionCode || '');
+      const blockedIds = getBlockedIdsForDate(workDate);
+      const currentType = String(box.dataset.positionType || window.__wpSelectedPositionType || '').trim().toUpperCase();
+      const selectedElsewhere = getSelectedUserMapForShift(workDate, sessionCode, box);
+
+      box.querySelectorAll('.js-user-check').forEach(chk => {
+        const uid = String(chk.value || '');
+        const label = chk.closest('.user-picker-option');
+        const isOwnChecked = chk.checked;
+
+        const hardBlocked = blockedIds.includes(uid);
+        const selectedTypesElsewhere = selectedElsewhere[uid] || [];
+        const duplicateBlocked = !isOwnChecked && selectedTypesElsewhere.length > 0 && (
+          selectedTypesElsewhere.some(t => t !== currentType) || currentType !== 'PHONG_DIEU_TRI'
+        );
+
+        chk.disabled = hardBlocked || duplicateBlocked;
+
+        if (label) {
+          label.classList.toggle('is-blocked', hardBlocked || duplicateBlocked);
+          if (hardBlocked) {
+            label.title = 'User này đang nghỉ đã duyệt hoặc bị chặn do lịch trực ngày hôm trước.';
+          } else if (duplicateBlocked) {
+            label.title = 'User này đã được phân ở vị trí khác hoặc loại vị trí khác trong cùng ngày/buổi.';
+          } else {
+            label.title = '';
+          }
+        }
+      });
+    });
+  }
+
+  function toggleUserPicker(btn) {
+    const dropdown = btn.closest('.user-picker-dropdown');
+    if (!dropdown) return;
+
+    document.querySelectorAll('.user-picker-dropdown.open').forEach(el => {
+      if (el !== dropdown) closeUserPicker(el, false);
+    });
+
+    if (dropdown.classList.contains('open')) {
+      closeUserPicker(dropdown, false);
+    } else {
+      openUserPicker(dropdown);
+    }
+  }
+
+  function filterUserPicker(inputEl) {
+    const q = String(inputEl.value || '').trim().toLowerCase();
+    const panel = inputEl.closest('.user-picker-panel');
+    if (!panel) return;
+
+    panel.querySelectorAll('.user-picker-option').forEach(row => {
+      const txt = String(row.textContent || '').toLowerCase();
+      row.style.display = (!q || txt.includes(q)) ? '' : 'none';
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.user-picker-dropdown')) {
+      document.querySelectorAll('.user-picker-dropdown.open').forEach(el => closeUserPicker(el, false));
+    }
+  });
+
+  window.addEventListener('resize', function () {
+    document.querySelectorAll('.user-picker-dropdown.open').forEach(el => positionUserPickerPanel(el));
+  });
+
+  window.addEventListener('scroll', function () {
+    document.querySelectorAll('.user-picker-dropdown.open').forEach(el => positionUserPickerPanel(el));
+  }, true);
+
+  document.querySelectorAll('.user-picker-dropdown').forEach(dropdown => {
+    ensurePickerActions(dropdown);
+  });
+
+  document.querySelectorAll('.user-picker-box').forEach(box => {
+    refreshPickerButton(box);
+  });
+
+  refreshDuplicateLocks();
+</script>
+{% endblock %}

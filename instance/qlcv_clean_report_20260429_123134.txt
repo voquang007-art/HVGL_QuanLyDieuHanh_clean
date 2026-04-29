@@ -1,0 +1,48 @@
+=== CLEAN DATABASE HOÀN TẤT ===
+Thời gian: 2026-04-29 12:31:34
+Database: C:/HVGL_QuanLyDieuHanh_clean/instance/qlcv.sqlite3
+Backup:   C:\HVGL_QuanLyDieuHanh_clean\instance\qlcv_backup_before_clean_20260429_123134.sqlite3
+Tổng số bản ghi đã xóa: 0
+
+Chi tiết đã xóa:
+  - chat_attachments: 0
+  - chat_message_likes: 0
+  - chat_messages: 0
+  - chat_meeting_speaker_requests: 0
+  - chat_meeting_leave_requests: 0
+  - chat_meeting_attendances: 0
+  - chat_meetings: 0
+  - chat_group_members: 0
+  - chat_groups: 0
+  - delete_files_task_related: 0
+  - task_reports: 0
+  - tasks: 0
+  - plan_items: 0
+  - plans: 0
+  - leave_roster_plan_items: 0
+  - leave_roster_adjustments: 0
+  - leave_roster_plans: 0
+  - leave_swap_requests: 0
+  - leave_schedule_notices: 0
+  - leave_requests: 0
+  - leave_group_members: 0
+  - leave_group_configs: 0
+  - leave_year_adjustments: 0
+  - work_position_adjustment_items: 0
+  - work_position_adjustments: 0
+  - work_position_notices: 0
+  - work_position_plan_items: 0
+  - work_position_plans: 0
+  - document_draft_actions: 0
+  - document_draft_files: 0
+  - document_drafts: 0
+  - files: 0
+  - committee_members: 0
+  - committees: 0
+  - visibility_user_grants: 0
+  - visibility_grants: 0
+  - delete_secret_sessions_non_admin: 0
+  - delete_user_roles_non_admin: 0
+  - delete_user_unit_memberships_non_admin: 0
+  - delete_users_non_admin: 0
+  - secret_sessions: 0

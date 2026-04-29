@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Tài khoản{% endblock %}
+{% block content %}
+<div class="container">
+  <h2>Tài khoản</h2>
+
+  {# Hợp nhất nguồn user: ưu tiên 'user', sau đó 'current_user' #}
+  {% set u = (user if (user is defined and user) else (current_user if (current_user is defined and current_user) else None)) %}
+
+  <div class="card" style="max-width:720px;">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-6"><strong>Họ tên</strong></div>
+        <div class="col-6">
+          {{ (u.full_name if u is not none and u.full_name else (u.name if u is not none and u.name else '—')) }}
+        </div>
+      </div>
+
+      <div class="row mt-2">
+        <div class="col-6"><strong>Tên đăng nhập</strong></div>
+        <div class="col-6">{{ u.username if u is not none and u.username else '—' }}</div>
+      </div>
+
+      <div class="row mt-2">
+        <div class="col-6"><strong>Email</strong></div>
+        <div class="col-6">{{ u.email if u is not none and u.email else '—' }}</div>
+      </div>
+
+      <div class="row mt-2">
+        <div class="col-6"><strong>Đơn vị</strong></div>
+        <div class="col-6">
+          {% set _units = (user_unit_names(u.id) if (u is not none and u.id is not none) else []) %}
+          {{ _units|join(', ') if _units else '—' }}
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <h4 style="margin-bottom:12px;">Đổi mật khẩu</h4>
+
+      {% if change_password_error %}
+        <div style="margin-bottom:12px; padding:10px 12px; border-radius:8px; background:#fdecec; color:#9b1c1c; border:1px solid #f5c2c7;">
+          {{ change_password_error }}
+        </div>
+      {% endif %}
+
+      {% if change_password_success %}
+        <div style="margin-bottom:12px; padding:10px 12px; border-radius:8px; background:#edf7ed; color:#1e6b34; border:1px solid #b7dfc2;">
+          {{ change_password_success }}
+        </div>
+      {% endif %}
+
+      <form method="post" action="/account/change-password" style="max-width:520px;">
+        <div class="row mt-2">
+          <div class="col-6"><strong>Mật khẩu hiện tại</strong></div>
+          <div class="col-6">
+            <input type="password" name="current_password" required style="width:100%; padding:8px;">
+          </div>
+        </div>
+
+        <div class="row mt-2">
+          <div class="col-6"><strong>Mật khẩu mới</strong></div>
+          <div class="col-6">
+            <input type="password" name="new_password" required style="width:100%; padding:8px;">
+          </div>
+        </div>
+
+        <div class="row mt-2">
+          <div class="col-6"><strong>Nhập lại mật khẩu mới</strong></div>
+          <div class="col-6">
+            <input type="password" name="confirm_new_password" required style="width:100%; padding:8px;">
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <button type="submit" class="btn btn-primary">Đổi mật khẩu</button>
+        </div>
+      </form>
+	  
+      <div class="mt-3">
+        <a class="btn btn-outline-secondary" href="/auth/logout">Đăng xuất</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

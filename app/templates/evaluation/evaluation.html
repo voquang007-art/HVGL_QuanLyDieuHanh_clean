@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .evaluation-page{padding:16px 0}
+  .evaluation-card{background:#fff;border:1px solid #d8e1ea;border-radius:14px;padding:16px;box-shadow:0 8px 18px rgba(15,23,42,.04);margin-bottom:16px}
+  .evaluation-title{margin:0 0 14px;font-size:24px;font-weight:700;color:#123b63}
+  .evaluation-subtitle{margin:0 0 10px;font-size:15px;font-weight:700;color:#123b63}
+  .evaluation-grid{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:12px;align-items:end}
+  .evaluation-field label{display:block;font-weight:600;margin-bottom:6px;color:#26465f}
+  .evaluation-field select{width:100%;height:40px;border:1px solid #cdd8e3;border-radius:10px;padding:0 12px;background:#fff}
+  .evaluation-actions{display:flex;gap:10px;flex-wrap:wrap}
+  .btn-eval{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:10px;border:1px solid #0f5fa8;background:#0f5fa8;color:#fff;text-decoration:none;font-weight:600;cursor:pointer}
+  .btn-eval.secondary{background:#fff;color:#0f5fa8}
+  .evaluation-result-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px}
+  .evaluation-result-head h2{margin:0;font-size:20px;color:#123b63}
+  .evaluation-meta{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:8px 16px;margin:12px 0 0}
+  .evaluation-meta div{font-size:14px;color:#27465e}
+  .evaluation-table{width:100%;border-collapse:collapse;margin-top:10px}
+  .evaluation-table th,.evaluation-table td{border:1px solid #d8e1ea;padding:10px 12px;text-align:left}
+  .evaluation-table th{background:#103b67;color:#fff}
+  .evaluation-empty{padding:18px;border:1px dashed #c6d4e0;border-radius:12px;background:#fafcff;color:#50667c}
+  @media (max-width: 960px){
+    .evaluation-grid{grid-template-columns:1fr 1fr}
+    .evaluation-meta{grid-template-columns:1fr}
+  }
+  @media (max-width: 640px){
+    .evaluation-grid{grid-template-columns:1fr}
+  }
+</style>
+
+<div class="evaluation-page">
+  <div class="evaluation-card">
+    <h1 class="evaluation-title">Đánh giá hoàn thành công việc</h1>
+    <form method="get" action="/evaluation">
+      <div class="evaluation-grid">
+        <div class="evaluation-field">
+          <label for="period_type">Thời gian đánh giá</label>
+          <select id="period_type" name="period_type">
+            <option value="month" {% if period_type == 'month' %}selected{% endif %}>Tháng</option>
+            <option value="quarter" {% if period_type == 'quarter' %}selected{% endif %}>Quý</option>
+            <option value="year" {% if period_type == 'year' %}selected{% endif %}>Năm</option>
+          </select>
+        </div>
+
+        <div class="evaluation-field">
+          <label for="year">Năm</label>
+          <select id="year" name="year">
+            {% for y in range(selected_year - 3, selected_year + 4) %}
+              <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="evaluation-field" id="month_wrap" {% if period_type != 'month' %}style="display:none"{% endif %}>
+          <label for="month">Tháng</label>
+          <select id="month" name="month">
+            {% for m in range(1, 13) %}
+              <option value="{{ m }}" {% if m == selected_month %}selected{% endif %}>Tháng {{ '%02d'|format(m) }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="evaluation-field" id="quarter_wrap" {% if period_type != 'quarter' %}style="display:none"{% endif %}>
+          <label for="quarter">Quý</label>
+          <select id="quarter" name="quarter">
+            {% for q in range(1, 5) %}
+              <option value="{{ q }}" {% if q == selected_quarter %}selected{% endif %}>Quý {{ q }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="evaluation-field">
+          <label for="target_picker">Danh sách đánh giá</label>
+          <select id="target_picker">
+            {% if individual_options %}
+              <optgroup label="Danh sách cá nhân">
+                {% for item in individual_options %}
+                  <option value="individual|{{ item.id }}" {% if selected_type == 'individual' and selected_id == item.id %}selected{% endif %}>
+                    {{ item.name }}{% if item.unit_name %} - {{ item.unit_name }}{% endif %}
+                  </option>
+                {% endfor %}
+              </optgroup>
+            {% endif %}
+            {% if unit_options %}
+              <optgroup label="Danh sách đơn vị">
+                {% for item in unit_options %}
+                  <option value="unit|{{ item.id }}" {% if selected_type == 'unit' and selected_id == item.id %}selected{% endif %}>
+                    {{ item.name }}{% if item.parent_name %} - {{ item.parent_name }}{% endif %}
+                  </option>
+                {% endfor %}
+              </optgroup>
+            {% endif %}
+
+            {% if committee_options %}
+              <optgroup label="Ban kiêm nhiệm">
+                {% for item in committee_options %}
+                  <option value="committee|{{ item.id }}" {% if selected_type == 'committee' and selected_id == item.id %}selected{% endif %}>
+                    {{ item.name }}
+                  </option>
+                {% endfor %}
+              </optgroup>
+            {% endif %}
+          </select>
+          <input type="hidden" id="target_type" name="target_type" value="{{ selected_type }}">
+          <input type="hidden" id="target_id" name="target_id" value="{{ selected_id }}">
+        </div>
+
+        <div class="evaluation-actions">
+          <button type="submit" class="btn-eval">Xem kết quả</button>
+          {% if result %}
+            <a class="btn-eval secondary" href="/evaluation/export?period_type={{ period_type }}&year={{ selected_year }}&month={{ selected_month }}&quarter={{ selected_quarter }}&target_type={{ selected_type }}&target_id={{ selected_id }}">Xuất file .txt</a>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+
+  {% if result %}
+    <div class="evaluation-card">
+      <div class="evaluation-result-head">
+        <div>
+          <h2>{{ result.subject_name }}</h2>
+          <div class="evaluation-meta">
+            <div>
+              <strong>Loại đánh giá:</strong>
+              {% if result.mode == 'individual' %}
+                Cá nhân
+              {% elif result.mode == 'committee' %}
+                Ban kiêm nhiệm
+              {% else %}
+                Đơn vị
+              {% endif %}
+            </div>
+            <div><strong>Kỳ đánh giá:</strong> {{ result.period_label }}</div>
+            <div><strong>Phạm vi:</strong> {{ result.unit_name or '-' }}</div>
+            <div><strong>Tổng chỉ tiêu kế hoạch:</strong> {{ result.plan_total }}</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="evaluation-subtitle">I. Kế hoạch</h3>
+      <table class="evaluation-table">
+        <thead>
+          <tr>
+            <th>Trạng thái</th>
+            <th>Số lượng</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Chưa thực hiện</td><td>{{ result.plan_stats['Chưa thực hiện'] }}</td></tr>
+          <tr><td>Mới triển khai bước đầu</td><td>{{ result.plan_stats['Mới triển khai bước đầu'] }}</td></tr>
+          <tr><td>Đang thực hiện</td><td>{{ result.plan_stats['Đang thực hiện'] }}</td></tr>
+          <tr><td>Đã hoàn thành</td><td>{{ result.plan_stats['Đã hoàn thành'] }}</td></tr>
+          <tr><td>Chuyển kỳ sau</td><td>{{ result.plan_stats['Chuyển kỳ sau'] }}</td></tr>
+        </tbody>
+      </table>
+	  
+      <h3 class="evaluation-subtitle" style="margin-top:18px;">II. Chỉ số quản trị kế hoạch</h3>
+      <table class="evaluation-table">
+        <thead>
+          <tr>
+            <th>Chỉ số</th>
+            <th>Số lượng</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Công việc từng bị chuyển kỳ sau</td>
+            <td>{{ result.plan_admin_stats.ever_carried_forward }}</td>
+          </tr>
+          <tr>
+            <td>Tổng số lần chuyển kỳ sau</td>
+            <td>{{ result.plan_admin_stats.carry_forward_times }}</td>
+          </tr>
+        </tbody>
+      </table>	  
+
+      {% if result.task_stats %}
+        <h3 class="evaluation-subtitle" style="margin-top:18px;">III. Giao việc</h3>
+        <table class="evaluation-table">
+          <thead>
+            <tr>
+              <th>Chỉ tiêu</th>
+              <th>Số lượng</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Số lượng công việc giao</td><td>{{ result.task_stats.total }}</td></tr>
+            <tr><td>Số lượng công việc hoàn thành</td><td>{{ result.task_stats.done }}</td></tr>
+            <tr><td>Số công việc hoàn thành trước thời hạn</td><td>{{ result.task_stats.done_early }}</td></tr>
+            <tr><td>Số công việc hoàn thành đúng thời hạn</td><td>{{ result.task_stats.done_on_time }}</td></tr>
+            <tr><td>Số lượng quá hạn</td><td>{{ result.task_stats.overdue }}</td></tr>
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="evaluation-card evaluation-empty">Không có dữ liệu đánh giá trong phạm vi hiện tại.</div>
+  {% endif %}
+</div>
+
+<script>
+(function(){
+  const periodType = document.getElementById('period_type');
+  const monthWrap = document.getElementById('month_wrap');
+  const quarterWrap = document.getElementById('quarter_wrap');
+  const picker = document.getElementById('target_picker');
+  const targetType = document.getElementById('target_type');
+  const targetId = document.getElementById('target_id');
+
+  function syncPeriodFields(){
+    const val = periodType ? periodType.value : 'month';
+    if(monthWrap){ monthWrap.style.display = val === 'month' ? '' : 'none'; }
+    if(quarterWrap){ quarterWrap.style.display = val === 'quarter' ? '' : 'none'; }
+  }
+
+  function syncTarget(){
+    if(!picker || !targetType || !targetId){ return; }
+    const raw = picker.value || '';
+    const parts = raw.split('|');
+    targetType.value = parts[0] || '';
+    targetId.value = parts[1] || '';
+  }
+
+  if(periodType){
+    periodType.addEventListener('change', syncPeriodFields);
+    syncPeriodFields();
+  }
+  if(picker){
+    picker.addEventListener('change', syncTarget);
+    syncTarget();
+  }
+})();
+</script>
+{% endblock %}

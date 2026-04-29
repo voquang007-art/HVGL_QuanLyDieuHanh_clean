@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .committee-wrap {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .committee-card {
+    background: #fff;
+    border: 1px solid #dbe4f0;
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+  }
+  .committee-title {
+    margin: 0 0 12px;
+    color: #0f3f79;
+    font-size: 22px;
+    font-weight: 800;
+  }
+  .committee-subtitle {
+    margin: 0 0 10px;
+    color: #17375e;
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .committee-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .committee-item {
+    display: block;
+    padding: 10px 12px;
+    border: 1px solid #dbe4f0;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #17375e;
+    background: #f8fbff;
+    font-weight: 700;
+  }
+  .committee-item.is-active {
+    background: #0f5cc0;
+    color: #fff !important;
+    border-color: #0f5cc0;
+  }
+  .committee-item.is-active * {
+    color: #fff !important;
+  }
+  .committee-muted {
+    color: #667085;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .committee-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .committee-grid .full {
+    grid-column: 1 / -1;
+  }
+  .committee-field label {
+    display: block;
+    margin-bottom: 5px;
+    color: #17375e;
+    font-weight: 800;
+  }
+  .committee-field input,
+  .committee-field select,
+  .committee-field textarea {
+    width: 100%;
+    min-height: 40px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 14px;
+    background: #fff;
+  }
+  .committee-field textarea {
+    min-height: 76px;
+    resize: vertical;
+  }
+  .committee-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .committee-btn {
+    border: 0;
+    border-radius: 10px;
+    padding: 9px 14px;
+    background: #0f5cc0;
+    color: #fff;
+    font-weight: 800;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .committee-btn.secondary {
+    background: #475569;
+  }
+  .committee-btn.danger {
+    background: #dc2626;
+  }
+  .committee-btn.light {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+  .committee-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 14px;
+  }
+  .committee-table th,
+  .committee-table td {
+    border: 1px solid #dbe4f0;
+    padding: 8px;
+    vertical-align: top;
+  }
+  .committee-table th {
+    background: #0f5cc0;
+    color: #fff;
+    text-align: left;
+  }
+  .committee-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    background: #e0f2fe;
+    color: #075985;
+  }
+  .committee-badge.off {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .committee-alert {
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border-radius: 10px;
+    background: #ecfdf5;
+    border: 1px solid #86efac;
+    color: #166534;
+    font-weight: 800;
+  }
+  @media (max-width: 980px) {
+    .committee-wrap {
+      grid-template-columns: 1fr;
+    }
+    .committee-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<h1 class="committee-title">Ban kiêm nhiệm</h1>
+<p class="committee-muted">
+  Module này chỉ dùng cho Ban/Hội đồng/Tổ công tác có quyết định thành lập. Ban kiêm nhiệm không thay thế đơn vị gốc và không dùng cho Đăng ký nghỉ, Phân trực, Phân vị trí làm việc.
+</p>
+
+{% if msg %}
+  <div class="committee-alert">
+    {% if msg == 'created' %}Đã tạo Ban kiêm nhiệm.
+    {% elif msg == 'updated' %}Đã cập nhật Ban kiêm nhiệm.
+    {% elif msg == 'member_added' %}Đã thêm thành viên Ban.
+    {% elif msg == 'member_updated' %}Đã cập nhật chức vụ thành viên Ban.
+    {% elif msg == 'member_removed' %}Đã kết thúc tư cách thành viên Ban.
+    {% else %}Đã cập nhật dữ liệu.
+    {% endif %}
+  </div>
+{% endif %}
+
+<div class="committee-wrap">
+  <aside class="committee-card">
+    <h2 class="committee-subtitle">Danh sách Ban</h2>
+    <div class="committee-list">
+      {% for c in committees %}
+        <a class="committee-item {% if selected_committee and selected_committee.id == c.id %}is-active{% endif %}"
+           href="/committees?committee_id={{ c.id }}">
+          {{ c.name }}
+          <div style="font-size:12px;font-weight:600;margin-top:4px;">
+            Cơ quan quản lý: {{ committee_managed_by_label(c.managed_by) }}<br>
+            {% if c.is_active %}
+              Đang hoạt động
+            {% else %}
+              Đã kết thúc/khóa
+            {% endif %}
+          </div>
+        </a>
+      {% else %}
+        <div class="committee-muted">Chưa có Ban kiêm nhiệm.</div>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <section class="committee-card">
+    {% if can_manage %}
+      <h2 class="committee-subtitle">{% if selected_committee %}Thông tin Ban đang chọn{% else %}Tạo Ban kiêm nhiệm{% endif %}</h2>
+
+      {% if selected_committee %}
+        <form method="post" action="/committees/{{ selected_committee.id }}/update">
+      {% else %}
+        <form method="post" action="/committees/create">
+      {% endif %}
+          <div class="committee-grid">
+            <div class="committee-field full">
+              <label>Tên Ban/Hội đồng/Tổ công tác</label>
+              <input type="text" name="name" value="{{ selected_committee.name if selected_committee else '' }}" required>
+            </div>
+
+            <div class="committee-field">
+              <label>Mã Ban</label>
+              <input type="text" name="code" value="{{ selected_committee.code if selected_committee and selected_committee.code else '' }}">
+            </div>
+
+            <div class="committee-field">
+              <label>Loại</label>
+              <select name="committee_type">
+                {% for value, label in committee_types %}
+                  <option value="{{ value }}" {% if selected_committee and selected_committee.committee_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="committee-field">
+              <label>Cơ quan quản lý Ban</label>
+              <select name="managed_by">
+                {% for value, label in committee_managed_by_options %}
+                  <option value="{{ value }}"
+                    {% if selected_committee %}
+                      {% if selected_committee.managed_by == value %}selected{% endif %}
+                    {% elif value == 'HDTV' %}
+                      selected
+                    {% endif %}
+                  >{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="committee-field">
+              <label>Số quyết định</label>
+              <input type="text" name="decision_no" value="{{ selected_committee.decision_no if selected_committee and selected_committee.decision_no else '' }}">
+            </div>
+
+            <div class="committee-field">
+              <label>Ngày quyết định</label>
+              <input type="date" name="decision_date" value="{{ selected_committee.decision_date.strftime('%Y-%m-%d') if selected_committee and selected_committee.decision_date else '' }}">
+            </div>
+
+            <div class="committee-field">
+              <label>Ngày bắt đầu</label>
+              <input type="date" name="start_date" value="{{ selected_committee.start_date.strftime('%Y-%m-%d') if selected_committee and selected_committee.start_date else '' }}">
+            </div>
+
+            <div class="committee-field">
+              <label>Ngày kết thúc</label>
+              <input type="date" name="end_date" value="{{ selected_committee.end_date.strftime('%Y-%m-%d') if selected_committee and selected_committee.end_date else '' }}">
+            </div>
+
+            {% if selected_committee %}
+              <div class="committee-field">
+                <label>Trạng thái</label>
+                <select name="status_value">
+                  <option value="ACTIVE" {% if selected_committee.status == 'ACTIVE' %}selected{% endif %}>Đang hoạt động</option>
+                  <option value="CLOSED" {% if selected_committee.status == 'CLOSED' %}selected{% endif %}>Đã kết thúc/khóa</option>
+                </select>
+              </div>
+            {% endif %}
+
+            <div class="committee-field full">
+              <label>Ghi chú / căn cứ thành lập</label>
+              <textarea name="description">{{ selected_committee.description if selected_committee and selected_committee.description else '' }}</textarea>
+            </div>
+          </div>
+
+          <div class="committee-actions">
+            <button type="submit" class="committee-btn">{% if selected_committee %}Lưu thông tin Ban{% else %}Tạo Ban{% endif %}</button>
+            {% if selected_committee %}
+              <a class="committee-btn light" href="/committees">Tạo Ban mới</a>
+            {% endif %}
+          </div>
+        </form>
+    {% elif selected_committee %}
+      <h2 class="committee-subtitle">{{ selected_committee.name }}</h2>
+      <div class="committee-muted">
+        Cơ quan quản lý: {{ committee_managed_by_label(selected_committee.managed_by) }}<br>
+        Số quyết định: {{ selected_committee.decision_no or '-' }}<br>
+        Trạng thái:
+        {% if selected_committee.is_active %}
+          <span class="committee-badge">Đang hoạt động</span>
+        {% else %}
+          <span class="committee-badge off">Đã kết thúc/khóa</span>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if selected_committee %}
+      <hr style="border:0;border-top:1px solid #dbe4f0;margin:18px 0;">
+
+      <h2 class="committee-subtitle">Thành viên Ban</h2>
+
+      {% if can_manage %}
+        <form method="get" action="/committees" style="margin-bottom:10px;">
+          <input type="hidden" name="committee_id" value="{{ selected_committee.id }}">
+          <div class="committee-grid">
+            <div class="committee-field">
+              <label>Tìm user để gán vào Ban</label>
+              <input type="text" name="q" value="{{ q }}" placeholder="Nhập họ tên, username, email, điện thoại">
+            </div>
+            <div class="committee-field" style="display:flex;align-items:end;">
+              <button type="submit" class="committee-btn secondary">Tìm user</button>
+            </div>
+          </div>
+        </form>
+
+        <form method="post" action="/committees/{{ selected_committee.id }}/members/add">
+          <div class="committee-grid">
+            <div class="committee-field">
+              <label>User</label>
+              <select name="user_id" required>
+                <option value="">-- Chọn user --</option>
+                {% for u in users %}
+                  <option value="{{ u.id }}">
+                    {{ u.full_name or u.username }} - {{ u.username }}
+                    {% if u.approved_unit %} - {{ u.approved_unit.ten_don_vi }}{% endif %}
+                    {% if u.approved_subunit %} / {{ u.approved_subunit.ten_don_vi }}{% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="committee-field">
+              <label>Chức vụ trong Ban</label>
+              <select name="committee_role">
+                {% for value, label in committee_roles %}
+                  <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="committee-field">
+              <label>Tên chức vụ hiển thị thêm nếu có</label>
+              <input type="text" name="member_title" placeholder="Ví dụ: Thành viên phụ trách tổng hợp">
+            </div>
+
+            <div class="committee-field">
+              <label>Ghi chú</label>
+              <input type="text" name="note">
+            </div>
+          </div>
+
+          <div class="committee-actions">
+            <button type="submit" class="committee-btn">Thêm thành viên</button>
+          </div>
+        </form>
+      {% endif %}
+
+      <table class="committee-table">
+        <thead>
+          <tr>
+            <th style="width:22%;">Họ tên</th>
+            <th style="width:18%;">Tài khoản</th>
+            <th style="width:22%;">Đơn vị gốc</th>
+            <th style="width:16%;">Chức vụ Ban</th>
+            <th style="width:12%;">Trạng thái</th>
+            {% if can_manage %}
+              <th style="width:10%;">Thao tác</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in members %}
+            <tr>
+              <td>{{ m.user.full_name or '-' }}</td>
+              <td>{{ m.user.username or '-' }}</td>
+              <td>
+                {% if m.user.approved_unit %}
+                  {{ m.user.approved_unit.ten_don_vi }}
+                {% else %}
+                  -
+                {% endif %}
+                {% if m.user.approved_subunit %}
+                  / {{ m.user.approved_subunit.ten_don_vi }}
+                {% endif %}
+              </td>
+              <td>
+                {% if can_manage and m.is_active %}
+                  <form method="post" action="/committees/{{ selected_committee.id }}/members/{{ m.id }}/update">
+                    <select name="committee_role">
+                      {% for value, label in committee_roles %}
+                        <option value="{{ value }}" {% if m.committee_role == value %}selected{% endif %}>{{ label }}</option>
+                      {% endfor %}
+                    </select>
+                    <input type="text" name="member_title" value="{{ m.member_title or '' }}" placeholder="Tên chức vụ thêm" style="margin-top:6px;">
+                    <input type="text" name="note" value="{{ m.note or '' }}" placeholder="Ghi chú" style="margin-top:6px;">
+                    <button type="submit" class="committee-btn light" style="margin-top:6px;">Lưu</button>
+                  </form>
+                {% else %}
+                  {{ committee_role_label(m.committee_role) }}
+                  {% if m.member_title %}
+                    <div class="committee-muted">{{ m.member_title }}</div>
+                  {% endif %}
+                {% endif %}
+              </td>
+              <td>
+                {% if m.is_active %}
+                  <span class="committee-badge">Đang tham gia</span>
+                {% else %}
+                  <span class="committee-badge off">Đã kết thúc</span>
+                {% endif %}
+              </td>
+              {% if can_manage %}
+                <td>
+                  {% if m.is_active %}
+                    <form method="post" action="/committees/{{ selected_committee.id }}/members/{{ m.id }}/deactivate" onsubmit="return confirm('Kết thúc tư cách thành viên Ban của user này?');">
+                      <button type="submit" class="committee-btn danger">Kết thúc</button>
+                    </form>
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+              {% endif %}
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="{% if can_manage %}6{% else %}5{% endif %}">Chưa có thành viên Ban.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="committee-muted">Chọn một Ban ở danh sách bên trái hoặc tạo Ban mới.</div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

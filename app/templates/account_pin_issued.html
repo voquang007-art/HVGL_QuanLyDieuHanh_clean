@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Cấp PIN thành công</h2>
+
+<div class="card" style="margin-top:8px;">
+  <p><strong>Người dùng:</strong>
+     <code>{{ target_username }}</code>
+     {% if target_fullname %} – {{ target_fullname }}{% endif %}
+     <span class="text-muted">(ID: {{ target_id }})</span>
+  </p>
+
+  <div style="margin:12px 0; padding:12px; border:1px dashed #aaa; border-radius:8px;">
+    <div style="font-size:18px; margin-bottom:6px;">PIN mới (hiển thị <em>một lần</em>):</div>
+    <div id="pin-box" style="font-size:28px; font-weight:bold; letter-spacing:4px; user-select:all;">
+      {{ pin }}
+    </div>
+    <button class="btn btn-primary" style="margin-top:8px;" onclick="copyPin()">Sao chép PIN</button>
+  </div>
+
+  <p class="text-warning">
+    Lưu ý: PIN chỉ hiển thị <strong>một lần</strong> trên trang này và không được lưu dạng rõ ở bất kỳ đâu.
+    Vui lòng gửi PIN này cho người dùng bằng kênh an toàn (trực tiếp/Zalo).
+  </p>
+  <p class="text-muted">Sau khi người dùng nhập PIN tại trang <code>/secret-lock</code>, họ có thể vào các chức năng yêu cầu PIN/mã khóa theo phân quyền.</p>
+
+  <div style="margin-top:12px;">
+    <a href="/account/secrets" class="btn btn-secondary">Quay lại trang quản trị khóa & PIN</a>
+  </div>
+</div>
+
+<script>
+function copyPin() {
+  const el = document.getElementById('pin-box');
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  try {
+    document.execCommand('copy');
+    alert('Đã sao chép PIN vào clipboard.');
+  } catch (e) {
+    alert('Không sao chép được tự động. Vui lòng bôi đen và Ctrl+C.');
+  }
+  sel.removeAllRanges();
+}
+</script>
+{% endblock %}

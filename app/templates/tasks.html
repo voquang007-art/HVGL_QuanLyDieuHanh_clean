@@ -1,0 +1,643 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card tasks-page medical-tasks-page">
+  <div class="page-head">
+    <h2 class="page-title">Danh sách công việc</h2>
+  </div>
+
+  {% set me_id = (request.session.get('user_id') or (request.session.get('user') and request.session.get('user').get('id'))) %}
+
+  {% if tasks and tasks|length > 0 %}
+  <table class="table task-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Tiêu đề</th>
+        <th>Phạm vi</th>
+        <th>Tên người được giao việc</th>
+        <th>Trạng thái</th>
+        <th>Hạn hoàn thành</th>
+        <th>Hành động</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tasks %}
+      {% set is_closed = ( (t.closed_at is defined and t.closed_at) or (t.archived_at is defined and t.archived_at) or (t.deleted_at is defined and t.deleted_at) ) %}
+      {% if not is_closed %}
+      {% set st_raw = (t.status if t.status is defined else (t.trang_thai if t.trang_thai is defined else None)) %}
+      {% set st_txt = (st_raw.name if st_raw is not none and st_raw.name is defined else st_raw) %}
+      {% set st_key = (st_txt|string)|upper %}
+      {% set vn_map = {
+        'NEW':'Mới',
+        'ASSIGNED':'Đã giao',
+        'IN_PROGRESS':'Đang thực hiện',
+        'SUBMITTED':'Đã báo cáo',
+        'DONE':'Hoàn thành',
+        'CANCELLED':'Đã kết thúc'
+      } %}
+      {% set st_vn = vn_map.get(st_key, (st_txt if st_txt else '-')) %}
+      {% set due = (t.due_date if t.due_date is defined else (t.han_hoan_thanh if t.han_hoan_thanh is defined else None)) %}
+      {% set creator = ((t.created_by if t.created_by is defined else None) or (t.creator_user_id if t.creator_user_id is defined else None) or (t.owner_user_id if t.owner_user_id is defined else None)) %}
+      {% set is_creator = (me_id is not none and creator is not none and (me_id|string) == (creator|string)) %}
+
+      <tr>
+        <td class="cell-tight">{{ loop.index }}</td>
+
+        <td class="cell-title">
+          {{ t.title if t.title is defined and t.title else (t.tieu_de if t.tieu_de is defined else '-') }}
+          {% if t._files is defined and t._files and (t._files|length > 0) %}
+            <div class="task-file-strip">
+              {% for f in t._files %}
+                {% set _disp = (f.name if f.name is defined and f.name else (f.original_name if f.original_name is defined and f.original_name else (f.path if f.path is defined and f.path else (f.storage_path if f.storage_path is defined and f.storage_path else 'tệp')))) %}
+                {% set _preview_url = (f.preview_url if f.preview_url is defined and f.preview_url else (('/work-files/' ~ f.id ~ '/preview') if f.id is defined and f.id else '')) %}
+                {% set _download_url = (f.download_url if f.download_url is defined and f.download_url else (('/work-files/' ~ f.id ~ '/download') if f.id is defined and f.id else '')) %}
+                {% if _preview_url %}
+                  <span class="task-file-link">📎 {{ _disp }}</span>
+                  <a href="{{ _preview_url }}" target="_blank" class="task-file-link">Xem</a>
+                  {% if _download_url %}<a href="{{ _download_url }}" class="task-file-link">Tải</a>{% endif %}
+                  {% if f.id is defined and f.id %}
+                    <form method="post" action="/work-files/{{ f.id }}/delete" style="display:inline;" onsubmit="return confirm('Xóa tệp này?');">
+                      <button type="submit" class="task-file-link" style="border:none;cursor:pointer;">Xóa</button>
+                    </form>
+                  {% endif %}
+                {% else %}
+                  <a href="/{{ f.path or f.storage_path }}" target="_blank" class="task-file-link">📎 {{ _disp }}</a>
+                {% endif %}
+                {% if not loop.last %}, {% endif %}
+              {% endfor %}
+            </div>
+          {% endif %}
+        </td>
+
+        <td class="cell-tight">
+          <strong>{{ t._scope_label if t._scope_label is defined else 'Đơn vị' }}</strong>
+          {% if t._scope_name is defined and t._scope_name %}
+            <div class="text-muted">{{ t._scope_name }}</div>
+          {% endif %}
+        </td>
+
+        <td class="cell-assignee">
+          {{ t._assignee_name if t._assignee_name is defined and t._assignee_name else '-' }}
+        </td>
+
+        <td class="cell-status">
+          <span class="{% if (t._overdue if t._overdue is defined else False) or (t._due_soon if t._due_soon is defined else False) %}text-danger-strong{% endif %}">{{ st_vn }}</span>
+          {% if t._overdue is defined and t._overdue %}
+            <span class="text-danger-strong">— Đã trễ hạn</span>
+          {% endif %}
+
+          {% if t._latest_report_note is defined and t._latest_report_note %}
+            <div class="text-muted latest-note"><em>Ghi chú gần nhất:</em> {{ t._latest_report_note }}</div>
+          {% endif %}
+
+          {# ==== BỔ SUNG (fallback liệt kê file theo pattern đường dẫn nếu _files trống) ==== #}
+          {% if not (t._files is defined and t._files and (t._files|length > 0)) %}
+            {% set _fx = (list_task_report_files(t.id) if (t.id is defined) else []) %}
+            {% if not (_fx and (_fx|length>0)) %}
+              {% set _fx = (list_task_files(t.id) if (t.id is defined) else []) %}
+            {% endif %}
+            {% if _fx and (_fx|length > 0) %}
+              <div class="fallback-file-strip">
+                📎
+                {% for f in _fx[:3] %}
+                  {% set _href = (f.path if f.path is defined and f.path else (f.storage_path if f.storage_path is defined and f.storage_path else '')) %}
+                  {% set _name = (f.original_name if f.original_name is defined and f.original_name else (f.name if f.name is defined and f.name else (f.filename if f.filename is defined and f.filename else 'tệp'))) %}
+                  {% set _file_id = (f.id if f.id is defined and f.id else '') %}
+                  {% if _file_id %}
+                    <span class="fallback-file-link">{{ _name }}</span>
+                    <a href="/work-files/{{ _file_id }}/preview" target="_blank" class="fallback-file-link">Xem</a>
+                    <a href="/work-files/{{ _file_id }}/download" class="fallback-file-link">Tải</a>
+                    <form method="post" action="/work-files/{{ _file_id }}/delete" style="display:inline;" onsubmit="return confirm('Xóa tệp này?');">
+                      <button type="submit" class="fallback-file-link" style="border:none;cursor:pointer;">Xóa</button>
+                    </form>
+                  {% else %}
+                    <a href="/{{ _href }}" download class="fallback-file-link">{{ _name }}</a>
+                  {% endif %}
+                  {% if not loop.last %}, {% endif %}
+                {% endfor %}
+                {% if _fx|length > 3 %} và {{ _fx|length - 3 }} tệp khác{% endif %}
+              </div>
+            {% endif %}
+          {% endif %}
+          {# ==== HẾT BỔ SUNG ==== #}
+
+          {# ===== LỊCH SỬ BÁO CÁO (đầy đủ) – hiển thị cho NGƯỜI GIAO ===== #}
+          {% if t._reports is defined and t._reports and (t._reports|length > 0) %}
+            <div class="report-history-box">
+              <div class="report-history-title">Lịch sử báo cáo</div>
+              <ul class="report-history-list">
+                {% for r in t._reports %}
+                  <li class="report-history-item">
+                    <span class="text-muted">
+                      {% if r.at %}{{ r.at if r.at.strftime is not defined else (r.at|format_vn_dt) }} — {% endif %}
+                      {% if r.user %}<em>{{ r.user }}</em>: {% endif %}
+                    </span>
+                    {{ r.note }}
+                    {% if r.files and (r.files|length>0) %}
+                      <span> 📎
+                        {% for f in r.files[:3] %}
+                          {% set _file_id = (f.id if f.id is defined and f.id else '') %}
+                          {% if _file_id %}
+                            <span class="fallback-file-link">{{ f.name }}</span>
+                            <a href="/work-files/{{ _file_id }}/preview" target="_blank" class="fallback-file-link">Xem</a>
+                            <a href="/work-files/{{ _file_id }}/download" class="fallback-file-link">Tải</a>
+                            <form method="post" action="/work-files/{{ _file_id }}/delete" style="display:inline;" onsubmit="return confirm('Xóa tệp này?');">
+                              <button type="submit" class="fallback-file-link" style="border:none;cursor:pointer;">Xóa</button>
+                            </form>
+                          {% else %}
+                            <a href="/{{ f.path }}" download class="fallback-file-link">{{ f.name }}</a>
+                          {% endif %}
+                          {% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                        {% if r.files|length > 3 %} và {{ r.files|length - 3 }} tệp khác{% endif %}
+                      </span>
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+          {# ===== HẾT: LỊCH SỬ BÁO CÁO ===== #}
+        </td>
+
+        <td class="cell-deadline">
+          {% set css = "text-danger-strong" if (t._overdue or t._due_soon) else "" %}
+          <span class="{{ css }}">
+            {% if due %}
+              {% if due.strftime is defined %}
+                {{ due.strftime('%d-%m-%Y') }}
+              {% else %}
+                {% set s = (due|string) %}
+                {% if '-' in s and s|length >= 10 %}
+                  {{ s[8:10] ~ '-' ~ s[5:7] ~ '-' ~ s[0:4] }}
+                {% else %}
+                  {{ s }}
+                {% endif %}
+              {% endif %}
+            {% else %}—{% endif %}
+          </span>
+        </td>
+
+        <td class="cell-actions">
+          {% if is_creator and st_key in ['SUBMITTED','DONE','IN_PROGRESS'] %}
+           <form method="post" action="/inbox/{{ t.id }}/close" class="close-task-form"
+                  onsubmit="return confirm('Xác nhận kết thúc công việc này?');">
+              <button type="submit" class="btn btn-danger btn-sm">Phê duyệt hoàn thành</button>
+            </form>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+
+          {# ================== FORM Ý KIẾN CHỈ ĐẠO (giữ nguyên route/params) ================== #}
+          {% if is_creator %}
+            <form method="post" action="/inbox/{{ t.id }}/report" enctype="multipart/form-data"
+                  class="feedback-form">
+              <div class="feedback-title">Ý kiến chỉ đạo</div>
+              <textarea name="note" rows="2" placeholder="Nhập ý kiến chỉ đạo..." class="feedback-note"></textarea>
+              <div class="feedback-tools">
+                <input type="file" name="files" multiple>
+                <input type="hidden" name="as_feedback" value="1">
+                <button type="submit" class="btn btn-primary btn-sm feedback-submit">Gửi ý kiến</button>
+              </div>
+            </form>
+          {% endif %}
+          {# ================== HẾT ================== #}
+        </td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="text-muted empty-note">Chưa có công việc nào.</p>
+  {% endif %}
+
+  {% if can_assign %}
+    <hr class="section-divider">
+    <h3 class="assign-title">Giao việc</h3>
+
+    {% set cnt_tp    = (recipients_truongpho|length if recipients_truongpho is defined and recipients_truongpho else 0) %}
+    {% set cnt_to_nv = (recipients_to_nv|length      if recipients_to_nv      is defined and recipients_to_nv      else 0) %}
+    {% set cnt_nv    = (recipients_nv|length         if recipients_nv         is defined and recipients_nv         else 0) %}
+
+    <div class="alert assign-scope-alert">
+      <div><strong>Phạm vi giao việc:</strong> {{ scope_label }}</div>
+      <div class="text-muted scope-summary">
+        Số người trong phạm vi:
+        {% if cnt_tp %}{{ label_group_a or 'Cấp quản lý chính' }}: {{ cnt_tp }}{% endif %}
+        {% if cnt_tp and (cnt_to_nv or cnt_nv) %} • {% endif %}
+        {% if cnt_to_nv %}{{ label_group_b or 'Cấp quản lý trực tiếp' }}: {{ cnt_to_nv }}{% endif %}
+        {% if (cnt_to_nv or cnt_tp) and cnt_nv %} • {% endif %}
+        {% if cnt_nv %}{{ label_group_c or 'Nhân sự thực hiện' }}: {{ cnt_nv }}{% endif %}
+        {% if not (cnt_tp or cnt_to_nv or cnt_nv) %}
+          (Không có thành viên trong phạm vi)
+        {% endif %}
+      </div>
+    </div>
+
+<style>
+.medical-tasks-page .page-head{
+  margin-bottom:16px;
+}
+.medical-tasks-page .page-title{
+  margin:0;
+}
+.medical-tasks-page .task-table th{
+  white-space:nowrap;
+}
+.medical-tasks-page .task-table td{
+  vertical-align:top;
+}
+.medical-tasks-page .cell-tight,
+.medical-tasks-page .cell-assignee,
+.medical-tasks-page .cell-deadline{
+  white-space:nowrap;
+}
+.medical-tasks-page .cell-title{
+  min-width:250px;
+  line-height:1.55;
+}
+.medical-tasks-page .cell-status{
+  min-width:320px;
+  line-height:1.55;
+}
+.medical-tasks-page .cell-actions{
+  min-width:280px;
+}
+.medical-tasks-page .text-danger-strong{
+  color:#B91C1C;
+  font-weight:700;
+}
+
+.medical-tasks-page .task-file-strip,
+.medical-tasks-page .fallback-file-strip{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:center;
+  margin-top:6px;
+}
+.medical-tasks-page .task-file-link,
+.medical-tasks-page .fallback-file-link{
+  display:inline-flex;
+  align-items:center;
+  min-height:26px;
+  padding:3px 10px;
+  border:1px solid #D7E6F1;
+  border-radius:999px;
+  background:#EEF6FB;
+  color:#0F4C81;
+  font-size:12px;
+  font-weight:700;
+  text-decoration:none;
+}
+.medical-tasks-page .task-file-link:hover,
+.medical-tasks-page .fallback-file-link:hover{
+  background:#E2F0F8;
+  text-decoration:none;
+}
+
+.medical-tasks-page .latest-note{
+  margin-top:6px;
+  padding:7px 10px;
+  border:1px solid #E2E8F0;
+  border-radius:10px;
+  background:#F8FBFD;
+  font-size:12px;
+  line-height:1.5;
+}
+
+.medical-tasks-page .report-history-box{
+  margin-top:8px;
+  padding:10px 12px;
+  border:1px solid #DCE8F1;
+  border-radius:12px;
+  background:linear-gradient(180deg,#FAFCFE 0%,#F4F9FC 100%);
+  font-size:12px;
+}
+.medical-tasks-page .report-history-title{
+  margin-bottom:6px;
+  color:#0F4C81;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.2px;
+}
+.medical-tasks-page .report-history-list{
+  margin:0;
+  padding-left:18px;
+}
+.medical-tasks-page .report-history-item{
+  margin-bottom:4px;
+}
+.medical-tasks-page .report-history-item:last-child{
+  margin-bottom:0;
+}
+
+.medical-tasks-page .close-task-form{
+  display:inline-block;
+}
+.medical-tasks-page .feedback-form{
+  display:block;
+  margin-top:10px;
+  padding:12px;
+  border:1px solid #DCE8F1;
+  border-radius:12px;
+  background:#FBFDFF;
+}
+.medical-tasks-page .feedback-title{
+  margin-bottom:6px;
+  color:#0F4C81;
+  font-size:13px;
+  font-weight:800;
+}
+.medical-tasks-page .feedback-note{
+  width:100%;
+  min-height:78px;
+}
+.medical-tasks-page .feedback-tools{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  margin-top:8px;
+}
+.medical-tasks-page .feedback-submit{
+  margin-left:0;
+}
+.medical-tasks-page .assign-title{
+  margin:0 0 10px 0;
+  color:#0F4C81;
+  font-size:20px;
+  font-weight:800;
+}
+.medical-tasks-page .assign-scope-alert{
+  margin-top:6px;
+  border:1px solid #D8E4EE;
+  border-radius:12px;
+  background:linear-gradient(180deg,#F7FBFE 0%,#EEF6FB 100%);
+  color:#334155;
+}
+.medical-tasks-page .scope-summary{
+  margin-top:4px;
+}
+.medical-tasks-page .section-divider{
+  margin:20px 0 18px 0;
+  border:none;
+  border-top:1px solid #DCE8F1;
+}
+.medical-tasks-page .empty-note{
+  margin-top:8px;
+}
+#task-assign-form{
+  margin-top:14px;
+  padding:18px;
+  border:1px solid #DCE8F1;
+  border-radius:14px;
+  background:#FBFDFF;
+}
+#task-assign-form #title{
+  width:100%;
+}
+#task-assign-form #content{
+  width:100%;
+  min-height:160px;
+}
+.medical-tasks-page .scope-empty-note{
+  margin-top:8px;
+}
+.medical-tasks-page .scope-empty-list{
+  margin:4px 0 0 18px;
+}
+.medical-tasks-page .employee-note{
+  margin-top:12px;
+}
+
+@media (max-width: 1024px){
+  .medical-tasks-page .cell-actions{
+    min-width:220px;
+  }
+}
+</style>
+
+    <form action="/tasks/assign" method="post" id="task-assign-form" class="task-form">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="title"><strong>Tiêu đề công việc</strong></label>
+          <input id="title" type="text" name="title" required placeholder="Tiêu đề công việc" class="field-title">
+        </div>
+
+        <div class="form-field form-field--full">
+          <label for="content"><strong>Nội dung công việc</strong></label>
+          <textarea id="content" name="content" placeholder="Nội dung công việc (mô tả chi tiết)" class="field-content"></textarea>
+        </div>
+
+        <div class="form-field">
+          <label for="due_date"><strong>Thời hạn hoàn thành</strong></label>
+          <input id="due_date" type="date" name="due_date">
+        </div>
+
+        <div class="form-field">
+          <label for="task_scope_type"><strong>Phạm vi giao việc</strong></label>
+          <select id="task_scope_type" name="scope_type">
+            {% if cnt_tp or cnt_to_nv or cnt_nv %}
+              <option value="UNIT" selected>Đơn vị</option>
+            {% endif %}
+            {% if has_committee_task_scope %}
+              <option value="COMMITTEE" {% if not (cnt_tp or cnt_to_nv or cnt_nv) %}selected{% endif %}>Ban kiêm nhiệm</option>
+            {% endif %}
+          </select>
+        </div>
+
+        <div class="form-field" id="task-committee-box">
+          <label for="task_committee_id"><strong>Ban kiêm nhiệm</strong></label>
+          <select id="task_committee_id" name="committee_id">
+            <option value="">-- Chọn Ban kiêm nhiệm --</option>
+            {% for committee in committee_task_options %}
+              <option value="{{ committee.id }}">{{ committee.name }}</option>
+            {% endfor %}
+          </select>
+          <div class="text-muted" style="font-size:12px;margin-top:4px;">
+            Danh sách người nhận chỉ lấy từ thành viên của Ban được chọn.
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="assignee_id"><strong>Người được giao việc</strong></label>
+          <select id="assignee_id" name="assignee_id" required>
+            <option value="">-- Chọn người nhận --</option>
+
+            {% if cnt_tp %}
+            <optgroup label="{{ label_group_a or 'Cấp quản lý chính' }}">
+              {% for u in recipients_truongpho %}
+                {% if (u.id|string) != (me_id|string) %}
+                  <option value="{{ u.id }}">{{ u.full_name }}{% if u.username %} ({{ u.username }}){% endif %}</option>
+                {% endif %}
+              {% endfor %}
+            </optgroup>
+            {% endif %}
+
+            {% if cnt_to_nv %}
+            <optgroup label="{{ label_group_b or 'Cấp quản lý trực tiếp' }}">
+              {% for u in recipients_to_nv %}
+                {% if (u.id|string) != (me_id|string) %}
+                  <option value="{{ u.id }}">{{ u.full_name }}{% if u.username %} ({{ u.username }}){% endif %}</option>
+                {% endif %}
+              {% endfor %}
+            </optgroup>
+            {% endif %}
+
+            {% if cnt_nv %}
+            <optgroup label="{{ label_group_c or 'Nhân sự thực hiện' }}">
+              {% for u in recipients_nv %}
+                {% if (u.id|string) != (me_id|string) %}
+                  <option value="{{ u.id }}">{{ u.full_name }}{% if u.username %} ({{ u.username }}){% endif %}</option>
+                {% endif %}
+              {% endfor %}
+            </optgroup>
+            {% endif %}
+
+            {% for committee_payload in committee_task_recipients %}
+              <optgroup
+                label="Ban kiêm nhiệm: {{ committee_payload.name }}"
+                data-scope="COMMITTEE"
+                data-committee-id="{{ committee_payload.id }}"
+              >
+                {% for u in committee_payload.members %}
+                  {% if (u.id|string) != (me_id|string) %}
+                    <option value="{{ u.id }}" data-scope="COMMITTEE" data-committee-id="{{ committee_payload.id }}">
+                      {{ u.label }}{% if u.username %} ({{ u.username }}){% endif %}
+                    </option>
+                  {% endif %}
+                {% endfor %}
+              </optgroup>
+            {% endfor %}
+
+            {% if not (cnt_tp or cnt_to_nv or cnt_nv or has_committee_task_scope) %}
+              <option value="" disabled>(Chưa có người nhận trong phạm vi)</option>
+            {% endif %}
+          </select>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Giao việc</button>
+        </div>
+      </div>
+    </form>
+
+    {% if not (cnt_tp or cnt_to_nv or cnt_nv or has_committee_task_scope) %}
+      <div class="text-muted scope-empty-note">
+        Không có người nhận phù hợp trong phạm vi. Hãy kiểm tra:
+        <ul class="scope-empty-list">
+          <li>Vai trò/vị trí của người nhận đã được gán đúng chưa.</li>
+          <li>Thành viên đã được gán đúng đơn vị chính hoặc đơn vị kiêm nhiệm theo phạm vi quản lý chưa.</li>
+          <li>Với user kiêm nhiệm, cần bảo đảm hệ thống đã có cả role chính và role kiêm nhiệm tương ứng.</li>
+        </ul>
+      </div>
+    {% endif %}
+
+  {% else %}
+    <div class="text-muted employee-note">
+      Bạn là nhân viên — chỉ hiển thị danh sách nhiệm vụ, không có phần giao việc.
+    </div>
+  {% endif %}
+</div>
+<script>
+  (function () {
+    "use strict";
+
+
+    function syncTaskAssignScope() {
+      var scopeSelect = document.getElementById("task_scope_type");
+      var committeeBox = document.getElementById("task-committee-box");
+      var committeeSelect = document.getElementById("task_committee_id");
+      var assigneeSelect = document.getElementById("assignee_id");
+
+      if (!scopeSelect || !assigneeSelect) {
+        return;
+      }
+
+      var scope = String(scopeSelect.value || "UNIT").toUpperCase();
+      var committeeId = committeeSelect ? String(committeeSelect.value || "") : "";
+
+      if (committeeBox) {
+        committeeBox.style.display = scope === "COMMITTEE" ? "" : "none";
+      }
+
+      Array.prototype.forEach.call(assigneeSelect.options, function (opt) {
+        if (!opt.value) {
+          opt.hidden = false;
+          return;
+        }
+
+        var optScope = String(opt.getAttribute("data-scope") || "UNIT").toUpperCase();
+        var optCommitteeId = String(opt.getAttribute("data-committee-id") || "");
+
+        if (scope === "COMMITTEE") {
+          opt.hidden = !(optScope === "COMMITTEE" && committeeId && optCommitteeId === committeeId);
+        } else {
+          opt.hidden = optScope === "COMMITTEE";
+        }
+      });
+
+      Array.prototype.forEach.call(assigneeSelect.querySelectorAll("optgroup"), function (group) {
+        var groupScope = String(group.getAttribute("data-scope") || "UNIT").toUpperCase();
+        var groupCommitteeId = String(group.getAttribute("data-committee-id") || "");
+
+        if (scope === "COMMITTEE") {
+          group.hidden = !(groupScope === "COMMITTEE" && committeeId && groupCommitteeId === committeeId);
+        } else {
+          group.hidden = groupScope === "COMMITTEE";
+        }
+      });
+
+      var selectedOption = assigneeSelect.options[assigneeSelect.selectedIndex];
+      if (selectedOption && selectedOption.hidden) {
+        assigneeSelect.value = "";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      var scopeSelect = document.getElementById("task_scope_type");
+      var committeeSelect = document.getElementById("task_committee_id");
+
+      if (scopeSelect) {
+        scopeSelect.addEventListener("change", syncTaskAssignScope);
+      }
+      if (committeeSelect) {
+        committeeSelect.addEventListener("change", syncTaskAssignScope);
+      }
+
+      syncTaskAssignScope();
+    });
+    window.addEventListener("hvgl:notify", function (event) {
+      var payload = (event && event.detail) || {};
+      if (!payload || payload.module !== "work") {
+        return;
+      }
+
+      if ([
+        "task_assigned",
+        "task_reported",
+        "task_feedback_sent",
+        "task_completed",
+        "task_closed"
+      ].indexOf(payload.type) === -1) {
+        return;
+      }
+
+      try {
+        window.dispatchEvent(new CustomEvent("hvgl:page-soft-refresh-needed", {
+          detail: {
+            module: "work",
+            page: "tasks",
+            type: payload.type || ""
+          }
+        }));
+      } catch (err) {
+        // bỏ qua
+      }
+    });
+  })();
+</script>
+
+{% endblock %}

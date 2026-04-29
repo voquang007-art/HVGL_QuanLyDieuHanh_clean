@@ -1,0 +1,557 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card dashboard-page">
+  <div class="page-head">
+    <h2 class="page-title">Dashboard giao việc &amp; nhận việc</h2>
+    <div class="page-subtitle">Phạm vi: {{ role_label }}</div>
+  </div>
+
+  <!-- BỘ LỌC -->
+  <form method="get" action="/dashboard" class="filters">
+    <div>
+      <label>Từ ngày</label>
+      <input type="date" name="f_from" value="{{ filters.f_from }}">
+    </div>
+    <div>
+      <label>Đến ngày</label>
+      <input type="date" name="f_to" value="{{ filters.f_to }}">
+    </div>
+    <div>
+      <label>Đơn vị</label>
+      <select name="f_unit">
+        <option value="">-- Tất cả --</option>
+        {% for uid, uname in units %}
+          <option value="{{ uid }}" {% if filters.f_unit|string == uid|string %}selected{% endif %}>{{ uname }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Tiến độ (trạng thái)</label>
+      <select name="f_status">
+        <option value="">-- Tất cả --</option>
+        {% for code, vn in statuses %}
+          <option value="{{ code }}" {% if filters.f_status == code %}selected{% endif %}>{{ vn }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Người nhận</label>
+      <select name="f_assignee">
+        <option value="">-- Tất cả --</option>
+        {% for uid, uname in assignees %}
+          <option value="{{ uid }}" {% if filters.f_assignee|string == uid|string %}selected{% endif %}>{{ uname }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filters-actions">
+      <button type="submit">Lọc</button>
+      <a class="btn-link" href="/dashboard">Xoá lọc</a>
+    </div>
+  </form>
+
+  <!-- ====== KHỐI: GIAO VIỆC ====== -->
+  {% if show_assign %}
+  <div class="card dashboard-section">
+    <h3 class="section-heading">GIAO VIỆC</h3>
+
+    <div class="kpi-grid">
+      <div class="kpi"><div>Tổng giao</div><h3>{{ kpi_assign.total }}</h3></div>
+      <div class="kpi"><div>Đang thực hiện</div><h3>{{ kpi_assign.in_progress }}</h3></div>
+      <div class="kpi"><div>Quá hạn</div><h3>{{ kpi_assign.overdue }}</h3></div>
+    </div>
+
+    <div class="card dashboard-block">
+      <h4>Xu hướng 12 tháng (Giao mới / Hoàn thành)</h4>
+      <div class="chart-wrap"><canvas id="assignTrendChart"></canvas></div>
+    </div>
+
+    <div class="card dashboard-block">
+      <h4>Phân bố giao việc</h4>
+
+      {% if assign_chart_mode == 'multi' %}
+        <div class="chart-wrap horizontal-scroll">
+          <canvas id="assignStackedChart"></canvas>
+        </div>
+        <div class="legend">
+          <span class="lg lg-red"></span> Quá hạn
+          <span class="lg lg-blue"></span> Hoàn thành
+          <span class="lg lg-orange"></span> Đang thực hiện
+        </div>
+      {% else %}
+        <div class="chart-wrap">
+          <canvas id="assignSingleChart"></canvas>
+        </div>
+        <div class="legend">
+          <span class="lg lg-orange"></span> Tổng số công việc
+          <span class="lg lg-blue"></span> Hoàn thành
+          <span class="lg lg-red"></span> Quá hạn
+          <span class="lg lg-orange"></span> Đang thực hiện
+        </div>
+      {% endif %}
+    </div>
+    {% if board_room_labels and board_room_labels|length > 0 %}
+    <div class="card dashboard-block">
+      <h4>Đánh giá Phòng theo kết quả thực hiện</h4>
+      <div class="chart-wrap horizontal-scroll">
+        <canvas id="boardRoomEvalChart"></canvas>
+      </div>
+      <div class="legend">
+        <span class="lg lg-gray"></span> Tổng số công việc được giao
+        <span class="lg lg-blue"></span> Hoàn thành (đã kết thúc)
+        <span class="lg lg-red"></span> Quá hạn
+        <span class="lg lg-orange"></span> Đang thực hiện
+      </div>
+    </div>
+    {% endif %}	
+  </div>
+  {% endif %}
+
+  <!-- ====== KHỐI: NHẬN VIỆC ====== -->
+  {% if show_inbox %}
+  <div class="card dashboard-section dashboard-section--spaced">
+    <h3 class="section-heading">NHẬN VIỆC</h3>
+
+    <div class="kpi-grid">
+      <div class="kpi"><div>Tổng nhận</div><h3>{{ kpi_inbox.total }}</h3></div>
+      <div class="kpi"><div>Đang thực hiện</div><h3>{{ kpi_inbox.in_progress }}</h3></div>
+      <div class="kpi"><div>Quá hạn</div><h3>{{ kpi_inbox.overdue }}</h3></div>
+    </div>
+
+    <div class="card dashboard-block">
+      <h4>Xu hướng 12 tháng (Nhận mới / Hoàn thành)</h4>
+      <div class="chart-wrap"><canvas id="inboxTrendChart"></canvas></div>
+    </div>
+
+    <div class="card dashboard-block">
+      <h4>Chi tiết công việc nhận (tối đa 200 dòng)</h4>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Công việc</th>
+            <th>Người giao → Người nhận</th>
+            <th>Đơn vị</th>
+            <th>Ngày giao</th>
+            <th>Hạn xử lý</th>
+            <th>Tiến độ</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for t in details_inbox %}
+          <tr onclick="window.location='/tasks/{{ t.id }}'">
+            <td>{{ t.title }}</td>
+            <td>{{ t.creator }} → {{ t.assignee }}</td>
+            <td>{{ t.unit }}</td>
+            <td>{{ t.start_date }}</td>
+            <td>{{ t.due_date }}</td>
+            <td>{{ {
+              "NEW":"Chưa bắt đầu",
+              "IN_PROGRESS":"Đang thực hiện",
+              "SUBMITTED":"Đã nộp",
+              "DONE":"Hoàn thành",
+              "CLOSED":"Đã đóng",
+              "REJECTED":"Bị từ chối",
+              "CANCELLED":"Đã hủy"
+            }[t.status] if t.status in ["NEW","IN_PROGRESS","SUBMITTED","DONE","CLOSED","REJECTED","CANCELLED"] else t.status }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.dashboard-page{
+  background:linear-gradient(180deg,#FCFEFF 0%,#F8FBFD 100%);
+}
+.dashboard-page .page-head{
+  margin-bottom:20px;
+  padding-bottom:12px;
+  border-bottom:2px solid #E4EEF5;
+}
+.dashboard-page .page-title{
+  margin:0;
+}
+.dashboard-page .page-subtitle{
+  margin-top:6px;
+  color:#5B6B7C;
+  font-size:14px;
+  font-weight:600;
+}
+
+.dashboard-page .filters{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(160px,1fr));
+  gap:14px;
+  margin:14px 0 14px 0;
+  padding:18px;
+  border:1px solid #DCE8F1;
+  border-radius:16px;
+  background:linear-gradient(180deg,#F9FCFE 0%,#F1F7FB 100%);
+  box-shadow:0 6px 20px rgba(15,76,129,.05);
+}
+.dashboard-page .filters > div{
+  min-width:0;
+}
+.dashboard-page .filters label{
+  margin-bottom:6px;
+  display:inline-block;
+  color:#334155;
+  font-size:13px;
+  font-weight:800;
+}
+.dashboard-page .filters-actions{
+  grid-column:1 / -1;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding-top:4px;
+}
+.dashboard-page .btn-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:40px;
+  padding:9px 14px;
+  border:1px solid #C9DAE7;
+  border-radius:10px;
+  background:#FFFFFF;
+  color:#0F4C81;
+  font-weight:700;
+  text-decoration:none;
+}
+
+.dashboard-page .dashboard-section{
+  margin-top:18px;
+  padding:20px;
+  border:1px solid #D9E7F0;
+  border-radius:16px;
+  background:linear-gradient(180deg,#FFFFFF 0%,#FBFDFF 100%);
+  box-shadow:0 6px 18px rgba(15,76,129,.05);
+}
+.dashboard-page .dashboard-section--spaced{
+  margin-top:22px;
+}
+.dashboard-page .dashboard-section > h3{
+  margin:0 0 16px 0;
+  padding-bottom:10px;
+  border-bottom:1px solid #E4EEF5;
+  color:#0F4C81;
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:.3px;
+}
+.dashboard-page .section-heading{
+  position:relative;
+  padding-left:14px;
+}
+.dashboard-page .section-heading::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:2px;
+  bottom:2px;
+  width:4px;
+  border-radius:4px;
+  background:linear-gradient(180deg,#0F4C81 0%,#1D6FA5 100%);
+}
+
+.dashboard-page .dashboard-block{
+  margin-top:18px;
+  padding:18px;
+  border:1px solid #E1ECF3;
+  border-radius:14px;
+  background:#FFFFFF;
+  box-shadow:0 4px 14px rgba(15,76,129,.05);
+}
+.dashboard-page .dashboard-block h4{
+  margin:0 0 12px 0;
+  color:#0F4C81;
+  font-size:16px;
+  font-weight:800;
+}
+
+.dashboard-page .kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:16px;
+  margin:16px 0 4px 0;
+}
+.dashboard-page .kpi{
+  position:relative;
+  padding:18px 18px 20px 18px;
+  border:1px solid #DCE8F1;
+  border-radius:16px;
+  background:linear-gradient(180deg,#F7FBFE 0%,#EDF6FB 100%);
+  box-shadow:0 6px 18px rgba(15,76,129,.06);
+  overflow:hidden;
+}
+.dashboard-page .kpi::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:4px;
+  background:linear-gradient(90deg,#0F4C81 0%,#1D6FA5 100%);
+}
+.dashboard-page .kpi > div{
+  color:#516274;
+  font-weight:800;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.3px;
+}
+.dashboard-page .kpi h3{
+  margin:10px 0 0 0;
+  font-size:34px;
+  line-height:1.05;
+  color:#0F4C81;
+}
+
+.dashboard-page .table{
+  margin-top:8px;
+}
+.dashboard-page .table thead th{
+  white-space:nowrap;
+}
+.dashboard-page .table tbody tr{
+  cursor:pointer;
+}
+.dashboard-page .table tbody tr:hover{
+  background:#F4FAFD;
+}
+.dashboard-page .table tbody td{
+  vertical-align:middle;
+}
+
+.dashboard-page .chart-wrap{
+  position:relative;
+  width:100%;
+  height:380px;
+  padding-top:8px;
+}
+.dashboard-page .horizontal-scroll{
+  overflow-x:auto;
+  padding-bottom:4px;
+}
+.dashboard-page .legend{
+  margin-top:14px;
+  display:flex;
+  gap:18px;
+  align-items:center;
+  flex-wrap:wrap;
+  color:#334155;
+  font-size:13px;
+  font-weight:700;
+}
+.dashboard-page .lg{
+  display:inline-block;
+  width:12px;
+  height:12px;
+  border-radius:3px;
+  margin-right:6px;
+  vertical-align:middle;
+  border:1px solid #D8E4EE;
+}
+.dashboard-page .lg-red{ background:#DC2626; }
+.dashboard-page .lg-blue{ background:#1D6FA5; }
+.dashboard-page .lg-orange{ background:#D97706; }
+.dashboard-page .lg-gray{ background:#64748B; }
+
+@media (max-width: 1200px){
+  .dashboard-page .filters{
+    grid-template-columns:repeat(3,minmax(160px,1fr));
+  }
+}
+@media (max-width: 768px){
+  .dashboard-page .filters{
+    grid-template-columns:1fr;
+  }
+  .dashboard-page .kpi-grid{
+    grid-template-columns:1fr;
+  }
+  .dashboard-page .chart-wrap{
+    height:300px;
+  }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const COLOR_RED = '#ef4444';
+const COLOR_BLUE = '#3b82f6';
+const COLOR_ORANGE = '#f59e0b';
+
+{% if show_assign %}
+(() => {
+  const ctx = document.getElementById('assignTrendChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: {{ trend_labels | tojson }},
+      datasets: [
+        { label: 'Giao mới', data: {{ trend_created | tojson }}, borderColor: COLOR_ORANGE, backgroundColor: 'transparent' },
+        { label: 'Hoàn thành', data: {{ trend_done | tojson }}, borderColor: COLOR_BLUE, backgroundColor: 'transparent' }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+})();
+{% endif %}
+
+{% if show_assign and assign_chart_mode == 'multi' %}
+(() => {
+  const ctx = document.getElementById('assignStackedChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ assign_cat_labels | tojson }},
+      datasets: [
+        { label: 'Quá hạn', data: {{ stacked_red | tojson }}, backgroundColor: COLOR_RED, stack: 's' },
+        { label: 'Hoàn thành', data: {{ stacked_blue | tojson }}, backgroundColor: COLOR_BLUE, stack: 's' },
+        { label: 'Đang thực hiện', data: {{ stacked_orange | tojson }}, backgroundColor: COLOR_ORANGE, stack: 's' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top' } },
+      scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+    }
+  });
+})();
+{% endif %}
+
+{% if show_assign and assign_chart_mode == 'single' %}
+(() => {
+  const ctx = document.getElementById('assignSingleChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Tổng', 'Hoàn thành', 'Quá hạn', 'Đang thực hiện'],
+      datasets: [
+        { label: 'Giá trị', data: [{{ single_total }}, {{ single_done }}, {{ single_overdue }}, {{ single_inprog }}],
+          backgroundColor: [COLOR_ORANGE, COLOR_BLUE, COLOR_RED, COLOR_ORANGE] }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+})();
+{% endif %}
+
+{% if show_inbox %}
+(() => {
+  const ctx = document.getElementById('inboxTrendChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: {{ trend_labels | tojson }},
+      datasets: [
+        { label: 'Nhận mới', data: {{ inbox_trend_created | tojson }}, borderColor: COLOR_ORANGE, backgroundColor: 'transparent' },
+        { label: 'Hoàn thành', data: {{ inbox_trend_done | tojson }}, borderColor: COLOR_BLUE, backgroundColor: 'transparent' }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+})();
+{% endif %}
+
+{% if show_assign and board_room_labels and board_room_labels|length > 0 %}
+(() => {
+  const el = document.getElementById('boardRoomEvalChart');
+  if (!el) return;
+  const ctx = el.getContext('2d');
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ board_room_labels | tojson }},
+      datasets: [
+        {
+          label: 'Tổng số công việc được giao',
+          data: {{ board_room_total | tojson }},
+          backgroundColor: '#64748B'
+        },
+        {
+          label: 'Hoàn thành (đã kết thúc)',
+          data: {{ board_room_closed | tojson }},
+          backgroundColor: COLOR_BLUE
+        },
+        {
+          label: 'Quá hạn',
+          data: {{ board_room_overdue | tojson }},
+          backgroundColor: COLOR_RED
+        },
+        {
+          label: 'Đang thực hiện',
+          data: {{ board_room_inprog | tojson }},
+          backgroundColor: COLOR_ORANGE
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          stacked: false,
+          ticks: {
+            autoSkip: false
+          }
+        },
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+})();
+{% endif %}
+</script>
+<script>
+  (function () {
+    "use strict";
+
+    function isDashboardPage() {
+      return window.location.pathname.indexOf("/dashboard") === 0;
+    }
+
+    function shouldRefreshDashboardSoftly(payload) {
+      if (!payload || payload.module !== "work") {
+        return false;
+      }
+      return [
+        "task_assigned",
+        "task_reported",
+        "task_feedback_sent",
+        "task_completed",
+        "task_closed"
+      ].indexOf(payload.type) !== -1;
+    }
+
+    window.addEventListener("hvgl:notify", function (event) {
+      var payload = (event && event.detail) || {};
+      if (!isDashboardPage() || !shouldRefreshDashboardSoftly(payload)) {
+        return;
+      }
+
+      try {
+        window.dispatchEvent(new CustomEvent("hvgl:page-soft-refresh-needed", {
+          detail: {
+            module: "work",
+            page: "dashboard",
+            type: payload.type || ""
+          }
+        }));
+      } catch (err) {
+        // bỏ qua
+      }
+    });
+  })();
+</script>
+{% endblock %}

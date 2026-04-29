@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Phân quyền xem</h2>
+  <p>  <p>Admin có thể cấp quyền xem theo đơn vị hoặc cấp quyền xem theo user cụ thể trong một phạm vi Phòng/Tổ.</p>.</p>
+  <form method="post" action="/grants/add" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+    <div style="grid-column:1 / span 2;">
+      <label>Đơn vị được cấp quyền</label>
+      <select name="grantee_unit_id" required>
+        <option value="">-- Chọn Phòng / Tổ --</option>
+        {% for un in unit_options %}
+          <option value="{{ un.id }}">{{ un.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label>Loại quyền</label>
+      <select name="mode" required>
+        <option value="VIEW_ALL">VIEW_ALL - Xem toàn bộ trong phạm vi grant</option>
+        <option value="FILES_ONLY">FILES_ONLY - Chỉ xem Files</option>
+        <option value="PLANS_ONLY">PLANS_ONLY - Chỉ xem Plans</option>
+        <option value="EVALUATION_ONLY">EVALUATION_ONLY - Chỉ xem Đánh giá công việc</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Hiệu lực từ</label>
+      <input type="date" name="effective_from" id="effective_from">
+    </div>
+
+    <div>
+      <label>Hiệu lực đến</label>
+      <input type="date" name="effective_to" id="effective_to">
+    </div>
+
+    <div style="grid-column:1 / span 2;">
+      <button type="submit">Cấp quyền</button>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="margin-top:12px;">
+  <h2>Cấp quyền xem theo user</h2>
+  <p>Chỉ user có trách nhiệm được chọn mới được xem trong phạm vi Phòng/Tổ tương ứng.</p>
+
+  <form method="post" action="/grants/add-user" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+    <div style="grid-column:1 / span 2;">
+      <label>User được cấp quyền</label>
+      <select name="grantee_user_id" required>
+        <option value="">-- Chọn user --</option>
+        {% for u in user_options %}
+          <option value="{{ u.id }}">{{ u.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="grid-column:1 / span 2;">
+      <label>Phạm vi đơn vị được xem</label>
+      <select name="target_unit_id" required>
+        <option value="">-- Chọn Phòng / Tổ --</option>
+        {% for un in unit_options %}
+          <option value="{{ un.id }}">{{ un.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label>Loại quyền</label>
+      <select name="mode" required>
+        <option value="VIEW_ALL">VIEW_ALL - Xem toàn bộ trong phạm vi grant</option>
+        <option value="FILES_ONLY">FILES_ONLY - Chỉ xem Files</option>
+        <option value="PLANS_ONLY">PLANS_ONLY - Chỉ xem Plans</option>
+        <option value="EVALUATION_ONLY">EVALUATION_ONLY - Chỉ xem Đánh giá công việc</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Hiệu lực từ</label>
+      <input type="date" name="effective_from">
+    </div>
+
+    <div>
+      <label>Hiệu lực đến</label>
+      <input type="date" name="effective_to">
+    </div>
+
+    <div style="grid-column:1 / span 2;">
+      <button type="submit">Cấp quyền theo user</button>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="margin-top:12px;">
+  <h3>Danh sách quyền đã cấp</h3>
+  <table class="table">
+    <thead><tr><th>ID</th><th>Đơn vị được cấp quyền</th><th>Mode</th><th>Từ</th><th>Đến</th><th>Xoá</th></tr></thead>
+    <tbody>
+      {% for g in grants %}
+      <tr>
+        <td>{{ g.id }}</td>
+        <td>{{ g.grantee_unit_label }}</td>
+        <td>{{ g.mode }}</td>
+        <td>{{ g.effective_from or "-" }}</td>
+        <td>{{ g.effective_to or "-" }}</td>
+        <td>
+          <form method="post" action="/grants/delete">
+            <input type="hidden" name="grant_id" value="{{ g.id }}">
+            <button>Xoá</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card" style="margin-top:12px;">
+  <h3>Danh sách quyền theo user</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>User được cấp quyền</th>
+        <th>Phạm vi đơn vị</th>
+        <th>Mode</th>
+        <th>Từ</th>
+        <th>Đến</th>
+        <th>Xoá</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in user_grants %}
+      <tr>
+        <td>{{ g.id }}</td>
+        <td>{{ g.grantee_user_name }}</td>
+        <td>{{ g.target_unit_label }}</td>
+        <td>{{ g.mode }}</td>
+        <td>{{ g.effective_from or "-" }}</td>
+        <td>{{ g.effective_to or "-" }}</td>
+        <td>
+          <form method="post" action="/grants/delete-user">
+            <input type="hidden" name="grant_id" value="{{ g.id }}">
+            <button>Xoá</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7"><em>Chưa có quyền theo user.</em></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const fromInput = document.getElementById("effective_from");
+  const toInput = document.getElementById("effective_to");
+
+  if (fromInput && !fromInput.value) {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    fromInput.value = `${yyyy}-${mm}-${dd}`;
+  }
+
+  function syncMinDate() {
+    if (fromInput && toInput) {
+      toInput.min = fromInput.value || "";
+      if (toInput.value && fromInput.value && toInput.value < fromInput.value) {
+        toInput.value = "";
+      }
+    }
+  }
+
+  if (fromInput && toInput) {
+    syncMinDate();
+    fromInput.addEventListener("change", syncMinDate);
+  }
+});
+</script>
+{% endblock %}

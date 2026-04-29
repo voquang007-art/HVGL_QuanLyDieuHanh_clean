@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <script>
+    window.__usersManageUnits = {{ all_units_payload|tojson }};
+    window.__usersManagePositions = {{ position_defs|tojson }};
+  </script>
+  <h2>Phê duyệt và quản lý người dùng</h2>
+  <p>Admin/Lãnh đạo dùng màn hình này để phê duyệt đăng ký, gán vị trí, khóa, mở khóa, xóa tài khoản và điều chỉnh đơn vị khi cần.</p>
+
+  <script>
+    function confirmAndDisable(btn, msg) {
+      if (!confirm(msg)) return false;
+      btn.disabled = true;
+      btn.closest("form").submit();
+      return false;
+    }
+  </script>
+
+  <h3 style="margin-top:16px;">Chờ phê duyệt</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Họ tên</th>
+        <th>Tên đăng nhập</th>
+        <th>Liên hệ</th>
+        <th>Khối</th>
+        <th>Đơn vị đề xuất</th>
+        <th>Đơn vị con đề xuất</th>
+        <th>Vị trí đề xuất</th>
+        <th>Phê duyệt</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in pendings %}
+      <tr>
+        <td>{{ u.full_name or '-' }}</td>
+        <td>{{ u.username }}</td>
+        <td>{{ u.email or '-' }}<br>{{ u.phone or '-' }}</td>
+        <td>
+          {{ 'Khối hành chính' if (u.requested_block_code|string) == 'HANH_CHINH'
+             else 'Khối chuyên môn' if (u.requested_block_code|string) == 'CHUYEN_MON'
+             else '-' }}
+        </td>
+        <td>{{ u.requested_unit_name or '-' }}</td>
+        <td>{{ u.requested_subunit.ten_don_vi if u.requested_subunit else '-' }}</td>
+        <td>{{ u.requested_position_label or '-' }}</td>
+        <td style="min-width:340px;">
+          <form method="post" action="/account/users/approve" style="display:block;" class="js-approve-form" data-block-code="{{ u.requested_block_code|string }}" data-requested-unit-id="{{ u.requested_unit_id or '' }}" data-requested-subunit-id="{{ u.requested_subunit_id or '' }}">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+
+            <select name="approved_position_code" required class="js-approved-position">
+              {% for code, cfg in position_defs.items() %}
+                {% set req_block = (u.requested_block_code|string) %}
+                {% if req_block in cfg.block_codes %}
+                  <option value="{{ code }}" {% if u.requested_position_code == code %}selected{% endif %}>
+                    {{ cfg.label }}
+                  </option>
+                {% endif %}
+              {% endfor %}
+            </select>
+
+            <select name="approved_unit_id" required style="margin-top:6px;" class="js-approved-unit" data-selected-unit-id="{{ u.requested_unit_id or '' }}"></select>
+
+            <select name="approved_subunit_id" style="margin-top:6px;" class="js-approved-subunit" data-selected-subunit-id="{{ u.requested_subunit_id or '' }}">
+              <option value="">-- Không chọn đơn vị con --</option>
+            </select>
+
+            <div style="margin-top:6px;">
+              <button type="submit" onclick="return confirmAndDisable(this,'Phê duyệt tài khoản này?')">Phê duyệt</button>
+            </div>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if pendings|length == 0 %}
+      <tr><td colspan="8" style="text-align:center;color:#6B7280;">Không có tài khoản chờ phê duyệt</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Đang hoạt động</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Họ tên</th>
+        <th>Tên đăng nhập</th>
+        <th>Vị trí hiện tại</th>
+        <th>Đơn vị hiện tại</th>
+        <th>Đổi vị trí</th>
+        <th>Vai trò kiêm nhiệm</th>
+        <th>Điều chuyển đơn vị</th>
+        <th>Khóa</th>
+        <th>Xóa</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in actives %}
+      <tr>
+        <td>{{ u.full_name or '-' }}</td>
+        <td>{{ u.username }}</td>
+        <td>{{ u.current_position_label or '-' }}</td>
+        <td>{{ u.current_unit_name or '-' }}</td>
+
+        <td style="min-width:220px;">
+          <form method="post" action="/account/users/position" class="js-position-form" data-current-unit-id="{{ u.current_unit_id }}">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <select name="new_role" required>
+              {% for code, cfg in position_defs.items() %}
+                <option value="{{ code }}" {% if u.current_position_key == code %}selected{% endif %}>{{ cfg.label }}</option>
+              {% endfor %}
+            </select>
+            <div style="margin-top:6px;">
+              <button type="submit" onclick="return confirmAndDisable(this,'Cập nhật vị trí cho tài khoản này?')">Cập nhật</button>
+            </div>
+          </form>
+        </td>
+
+        <td style="min-width:280px;">
+          <form method="post" action="/account/users/extra-role/add" style="display:block;margin-bottom:8px;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <select name="extra_role_code" required>
+              <option value="">-- Chọn vai trò kiêm nhiệm --</option>
+              {% for role in extra_role_options %}
+                <option value="{{ role.code }}">{{ role.label }}</option>
+              {% endfor %}
+            </select>
+            <div style="margin-top:6px;">
+              <button type="submit" onclick="return confirmAndDisable(this,'Gán vai trò kiêm nhiệm cho tài khoản này?')">Gán</button>
+            </div>
+          </form>
+
+          {% if u.extra_role_rows and u.extra_role_rows|length > 0 %}
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              {% for role in u.extra_role_rows %}
+                <form method="post" action="/account/users/extra-role/remove" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                  <input type="hidden" name="user_id" value="{{ u.id }}">
+                  <input type="hidden" name="extra_role_code" value="{{ role.code }}">
+                  <span style="display:inline-block;padding:3px 8px;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-size:12px;font-weight:700;">
+                    {{ role.label }}
+                  </span>
+                  <button type="submit" style="background:#b91c1c;" onclick="return confirmAndDisable(this,'Gỡ vai trò kiêm nhiệm này?')">Gỡ</button>
+                </form>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="color:#6B7280;font-size:13px;">Chưa có vai trò kiêm nhiệm.</div>
+          {% endif %}
+        </td>
+
+        <td style="min-width:220px;">
+          <form method="post" action="/account/users/unit-transfer" class="js-transfer-form" data-position-key="{{ u.current_position_key }}">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <select name="new_unit_id" required class="js-transfer-unit" data-selected-unit-id="{{ u.current_unit_id }}"></select>
+            <div style="margin-top:6px;">
+              <button type="submit" onclick="return confirmAndDisable(this,'Điều chuyển đơn vị cho tài khoản này?')">Điều chuyển</button>
+            </div>
+          </form>
+        </td>
+
+        <td>
+          <form method="post" action="/account/users/lock" style="display:inline;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <button type="submit" style="background:#DC2626;" onclick="return confirmAndDisable(this,'Khóa tài khoản này?')">Khóa</button>
+          </form>
+        </td>
+
+        <td>
+          <form method="post" action="/account/users/delete" style="display:inline;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <button type="submit" style="background:#7f1d1d;" onclick="return confirmAndDisable(this,'Xóa tài khoản này? Hành động này không hoàn tác được.')">Xóa</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if actives|length == 0 %}
+      <tr><td colspan="9" style="text-align:center;color:#6B7280;">Không có tài khoản đang hoạt động</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:16px;">Đã khóa</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Họ tên</th>
+        <th>Tên đăng nhập</th>
+        <th>Vị trí hiện tại</th>
+        <th>Đơn vị hiện tại</th>
+        <th>Mở khóa</th>
+        <th>Xóa</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in locked %}
+      <tr>
+        <td>{{ u.full_name or '-' }}</td>
+        <td>{{ u.username }}</td>
+        <td>{{ u.current_position_label or '-' }}</td>
+        <td>{{ u.current_unit_name or '-' }}</td>
+        <td>
+          <form method="post" action="/account/users/unlock" style="display:inline;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <button type="submit" onclick="return confirmAndDisable(this,'Mở khóa tài khoản này?')">Mở khóa</button>
+          </form>
+        </td>
+        <td>
+          <form method="post" action="/account/users/delete" style="display:inline;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <button type="submit" style="background:#7f1d1d;" onclick="return confirmAndDisable(this,'Xóa tài khoản này? Hành động này không hoàn tác được.')">Xóa</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if locked|length == 0 %}
+      <tr><td colspan="6" style="text-align:center;color:#6B7280;">Không có tài khoản bị khóa</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+<script>
+(function () {
+  const units = Array.isArray(window.__usersManageUnits) ? window.__usersManageUnits : [];
+
+  function unitsByFilter(fn) {
+    return units.filter(fn).sort((a, b) => {
+      if ((a.cap_do || 0) !== (b.cap_do || 0)) return (a.cap_do || 0) - (b.cap_do || 0);
+      return String(a.name || '').localeCompare(String(b.name || ''), 'vi');
+    });
+  }
+
+  function fillOptions(selectEl, items, selectedValue, placeholder) {
+    if (!selectEl) return;
+    const html = [];
+    if (placeholder !== null) {
+      html.push(`<option value="">${placeholder || '-- Chọn --'}</option>`);
+    }
+    for (const item of items) {
+      const selected = String(selectedValue || '') === String(item.id) ? ' selected' : '';
+      html.push(`<option value="${item.id}"${selected}>${item.name}</option>`);
+    }
+    selectEl.innerHTML = html.join('');
+  }
+
+  function needSubunit(positionKey) {
+    return ['TO_TRUONG','PHO_TO','TRUONG_NHOM','PHO_NHOM','TRUONG_DON_VI','PHO_DON_VI'].includes(String(positionKey || '').toUpperCase());
+  }
+
+  function canUseOptionalSubunit(positionKey) {
+    return ['BAC_SI','DUOC_SI','DIEU_DUONG_TRUONG','DIEU_DUONG','KY_THUAT_VIEN','HO_LY','NHAN_VIEN'].includes(String(positionKey || '').toUpperCase());
+  }
+
+  function parentCategoriesForPosition(positionKey, blockCode) {
+    const key = String(positionKey || '').toUpperCase();
+    const block = String(blockCode || '').toUpperCase();
+
+    if (['TONG_GIAM_DOC','PHO_TONG_GIAM_DOC_THUONG_TRUC','PHO_TONG_GIAM_DOC'].includes(key)) {
+      return ['ROOT'];
+    }
+
+    if (['GIAM_DOC','PHO_GIAM_DOC_TRUC','PHO_GIAM_DOC'].includes(key)) {
+      return ['EXECUTIVE'];
+    }
+
+    if (['TRUONG_PHONG','PHO_PHONG'].includes(key)) {
+      return ['PHONG'];
+    }
+
+    if (['TO_TRUONG','PHO_TO'].includes(key)) {
+      return ['PHONG'];
+    }
+
+    if ([
+      'TRUONG_KHOA','PHO_KHOA','KY_THUAT_VIEN_TRUONG',
+      'QL_CHAT_LUONG','QL_KY_THUAT','QL_AN_TOAN','QL_VAT_TU',
+      'QL_TRANG_THIET_BI','QL_MOI_TRUONG','QL_CNTT'
+    ].includes(key)) {
+      return ['KHOA'];
+    }
+
+    if ([
+      'TRUONG_NHOM','PHO_NHOM',
+      'TRUONG_DON_VI','PHO_DON_VI',
+      'DIEU_DUONG_TRUONG_DON_VI','KY_THUAT_VIEN_TRUONG_DON_VI'
+    ].includes(key)) {
+      return ['KHOA'];
+    }
+
+    if (canUseOptionalSubunit(key)) {
+      return block === 'HANH_CHINH' ? ['PHONG'] : ['KHOA'];
+    }
+
+    return [];
+  }
+
+  function refreshApproveForm(form) {
+    const blockCode = String(form.dataset.blockCode || '').toUpperCase();
+    const positionSelect = form.querySelector('.js-approved-position');
+    const unitSelect = form.querySelector('.js-approved-unit');
+    const subunitSelect = form.querySelector('.js-approved-subunit');
+    if (!positionSelect || !unitSelect || !subunitSelect) return;
+
+    const positionKey = String(positionSelect.value || '').toUpperCase();
+    const selectedUnitId = unitSelect.dataset.selectedUnitId || '';
+    const selectedSubunitId = subunitSelect.dataset.selectedSubunitId || '';
+    const parentCats = parentCategoriesForPosition(positionKey, blockCode);
+
+    const parentUnits = unitsByFilter(u =>
+      parentCats.includes(String(u.unit_category || '').toUpperCase()) &&
+      String(u.block_code || '').toUpperCase() === blockCode
+    );
+
+    fillOptions(unitSelect, parentUnits, selectedUnitId, '-- Chọn đơn vị --');
+
+    const needsSub = needSubunit(positionKey);
+    const optionalSub = canUseOptionalSubunit(positionKey);
+
+    if (needsSub || optionalSub) {
+      const parentId = unitSelect.value || '';
+      const childUnits = unitsByFilter(u =>
+        String(u.unit_category || '').toUpperCase() === 'SUBUNIT' &&
+        String(u.block_code || '').toUpperCase() === blockCode &&
+        String(u.parent_id || '') === String(parentId || '')
+      );
+
+      fillOptions(subunitSelect, childUnits, selectedSubunitId, '-- Không chọn đơn vị con --');
+      subunitSelect.disabled = false;
+      subunitSelect.required = needsSub;
+
+      if (needsSub && !subunitSelect.value && childUnits.length) {
+        subunitSelect.value = childUnits[0].id;
+      }
+    } else {
+      fillOptions(subunitSelect, [], '', '-- Không chọn đơn vị con --');
+      subunitSelect.disabled = true;
+      subunitSelect.required = false;
+    }
+  }
+  document.querySelectorAll('.js-approve-form').forEach(form => {
+    const unitSelect = form.querySelector('.js-approved-unit');
+    const subunitSelect = form.querySelector('.js-approved-subunit');
+    if (!unitSelect || !subunitSelect) return;
+
+    unitSelect.dataset.selectedUnitId = form.dataset.requestedUnitId || '';
+    subunitSelect.dataset.selectedSubunitId = form.dataset.requestedSubunitId || '';
+
+    refreshApproveForm(form);
+
+    form.querySelector('.js-approved-position')?.addEventListener('change', () => {
+      subunitSelect.dataset.selectedSubunitId = '';
+      refreshApproveForm(form);
+    });
+
+    unitSelect.addEventListener('change', () => {
+      subunitSelect.dataset.selectedSubunitId = '';
+      refreshApproveForm(form);
+    });
+  });
+
+  document.querySelectorAll('.js-transfer-form').forEach(form => {
+    const positionKey = String(form.dataset.positionKey || '').toUpperCase();
+    const selectEl = form.querySelector('.js-transfer-unit');
+    if (!selectEl) return;
+
+    const selectedUnitId = selectEl.dataset.selectedUnitId || '';
+    let items = [];
+
+    if (needSubunit(positionKey)) {
+      items = unitsByFilter(u => String(u.unit_category || '').toUpperCase() === 'SUBUNIT');
+    } else if (canUseOptionalSubunit(positionKey)) {
+      items = unitsByFilter(u => ['PHONG','KHOA','SUBUNIT'].includes(String(u.unit_category || '').toUpperCase()));
+    } else if (['TRUONG_PHONG','PHO_PHONG'].includes(positionKey)) {
+      items = unitsByFilter(u => String(u.unit_category || '').toUpperCase() === 'PHONG');
+    } else if (['TRUONG_KHOA','PHO_KHOA','KY_THUAT_VIEN_TRUONG','QL_CHAT_LUONG','QL_KY_THUAT','QL_AN_TOAN','QL_VAT_TU','QL_TRANG_THIET_BI','QL_MOI_TRUONG','QL_CNTT'].includes(positionKey)) {
+      items = unitsByFilter(u => String(u.unit_category || '').toUpperCase() === 'KHOA');
+    } else if (['TONG_GIAM_DOC','PHO_TONG_GIAM_DOC_THUONG_TRUC','PHO_TONG_GIAM_DOC'].includes(positionKey)) {
+      items = unitsByFilter(u => String(u.unit_category || '').toUpperCase() === 'ROOT');
+    } else if (['GIAM_DOC','PHO_GIAM_DOC_TRUC','PHO_GIAM_DOC'].includes(positionKey)) {
+      items = unitsByFilter(u => String(u.unit_category || '').toUpperCase() === 'EXECUTIVE');
+    } else {
+      items = unitsByFilter(() => true);
+    }
+
+    fillOptions(selectEl, items, selectedUnitId, null);
+  });
+})();
+</script>
+{% endblock %}

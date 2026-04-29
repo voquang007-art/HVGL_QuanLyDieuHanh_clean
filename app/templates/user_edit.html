@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width:720px;">
+  <h2>Sửa thông tin người dùng</h2>
+  <form method="post" action="/account/users/update" style="display:block; margin-top:12px;">
+    <input type="hidden" name="user_id" value="{{ u.id }}">
+
+    <div class="form-row">
+      <label>Họ tên</label>
+      <input type="text" name="full_name" value="{{ u.full_name or '' }}" autocomplete="off">
+    </div>
+
+    <div class="form-row">
+      <label>Tên đăng nhập <span style="color:#DC2626">*</span></label>
+      <input type="text" name="username" value="{{ u.username or '' }}" required autocomplete="off">
+      <small>Đổi tên đăng nhập sẽ được kiểm tra trùng.</small>
+    </div>
+
+    <div class="form-row">
+      <label>Email</label>
+      <input type="email" name="email" value="{{ u.email or '' }}" autocomplete="off">
+    </div>
+
+    <div class="form-row">
+      <label>Điện thoại</label>
+      <input type="text" name="phone" value="{{ u.phone or '' }}" autocomplete="off">
+    </div>
+
+    <div style="margin-top:12px;">
+      <button type="submit">Lưu</button>
+      <a class="button" href="/account/users" style="margin-left:8px;">Hủy</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

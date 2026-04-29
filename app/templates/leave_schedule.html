@@ -1,0 +1,2407 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .leave-subtabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .leave-subtab {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:180px; padding:10px 14px; border-radius:10px;
+    text-decoration:none; font-weight:700; border:1px solid #cbd5e1;
+    background:#f8fafc; color:#0f172a;
+  }
+  .leave-subtab.is-active {
+    background:#0b4f9c;
+    color:#fff !important;
+    border-color:#0b4f9c;
+    opacity:1;
+  }
+  .leave-subtab.is-active,
+  .leave-subtab.is-active:visited,
+  .leave-subtab.is-active:hover,
+  .leave-subtab.is-active:focus {
+    color:#fff !important;
+  }
+  .leave-subtab-badge {
+    display:inline-block;
+    min-width:18px;
+    padding:1px 6px;
+    margin-left:6px;
+    border-radius:10px;
+    background:#dc2626;
+    color:#fff !important;
+    font-size:12px;
+    font-weight:700;
+    text-align:center;
+    line-height:18px;
+  }
+  .leave-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; }
+  .balance-card {
+    border:1px solid #dbe4ee; border-radius:12px; padding:12px; background:#fff;
+    box-shadow:0 1px 3px rgba(15, 23, 42, 0.06);
+  }
+  .balance-card .code {
+    display:inline-block; min-width:44px; text-align:center; padding:4px 10px; border-radius:999px;
+    background:#e0f2fe; color:#0c4a6e; font-weight:700; margin-bottom:8px;
+  }
+  .balance-card .title { font-weight:700; color:#0f172a; margin-bottom:6px; }
+  .balance-card .figure { font-size:22px; font-weight:800; color:#0b4f9c; margin-bottom:4px; }
+  .muted-note { color:#64748b; font-size:13px; }
+  .alert-box {
+    padding:12px 14px; border-radius:10px; margin-bottom:12px; font-weight:600;
+  }
+  .alert-success { background:#ecfdf5; color:#166534; border:1px solid #bbf7d0; }
+  .alert-error { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
+  .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+  .toolbar .btn, .action-btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    border:none; border-radius:8px; padding:9px 14px; cursor:pointer; text-decoration:none;
+    font-weight:700;
+  }
+  .btn-primary { background:#0b4f9c; color:#fff; }
+  .btn-secondary { background:#e2e8f0; color:#0f172a; }
+  .btn-warning { background:#b45309; color:#fff; }
+  .btn-success { background:#166534; color:#fff; }
+  .btn-danger { background:#b91c1c; color:#fff; }
+  .section-title { margin:0 0 10px 0; font-size:20px; font-weight:800; color:#0f172a; }
+  .section-subtitle { margin:0 0 14px 0; color:#475569; }
+  .form-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+  .form-grid .full { grid-column:1 / -1; }
+  .field label { display:block; margin-bottom:6px; font-weight:700; color:#0f172a; }
+  .field input, .field select, .field textarea {
+    width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px;
+    box-sizing:border-box; background:#fff;
+  }
+  .field textarea { min-height:90px; resize:vertical; }
+  .info-list { margin:0; padding-left:18px; color:#334155; }
+  .info-list li { margin-bottom:6px; }
+  .table-wrap { overflow:auto; }
+  .table { width:100%; border-collapse:collapse; }
+  .table th, .table td { border:1px solid #dbe4ee; padding:9px 10px; vertical-align:top; }
+  .table th { background:#eff6ff; color:#0f172a; text-align:left; }
+  .tag-status {
+    display:inline-block; border-radius:999px; padding:4px 10px; font-size:12px; font-weight:700;
+  }
+  .tag-pending { background:#fef3c7; color:#92400e; }
+  .tag-approved { background:#dcfce7; color:#166534; }
+  .tag-cancelled { background:#fee2e2; color:#991b1b; }
+  .placeholder-box {
+    border:1px dashed #94a3b8; border-radius:12px; padding:18px; background:#f8fafc; color:#334155;
+  }
+  @media (max-width: 840px) {
+    .form-grid { grid-template-columns:1fr; }
+  }
+    .month-picker-row {
+    display:flex; gap:12px; flex-wrap:wrap; align-items:end; margin-bottom:14px;
+  }
+  .calendar-grid {
+    display:grid;
+    grid-template-columns:repeat(7, minmax(0, 1fr));
+    gap:8px;
+    margin-top:12px;
+  }
+  .calendar-head {
+    background:#dbeafe;
+    color:#0f172a;
+    border-radius:8px;
+    padding:8px;
+    text-align:center;
+    font-weight:700;
+  }
+  .calendar-cell {
+    border:1px solid #dbe4ee;
+    border-radius:10px;
+    min-height:72px;
+    padding:8px;
+    background:#fff;
+    position:relative;
+    cursor:pointer;
+  }
+  .calendar-cell.is-empty {
+    background:#f8fafc;
+    border-style:dashed;
+    cursor:default;
+  }
+  .calendar-cell.is-sunday {
+    background:#fff7ed;
+  }
+  .calendar-cell.is-locked {
+    background:#fee2e2;
+    border-color:#fecaca;
+    color:#991b1b;
+  }
+  .calendar-cell.is-selected {
+    background:#dbeafe;
+    border-color:#60a5fa;
+  }
+  .calendar-day-number {
+    font-weight:800;
+    margin-bottom:6px;
+  }
+  .calendar-note {
+    font-size:12px;
+    color:#64748b;
+  }
+  .calendar-help {
+    margin-top:10px;
+    color:#991b1b;
+    font-weight:600;
+  }
+  .selected-days-box {
+    margin-top:12px;
+    padding:10px 12px;
+    border:1px solid #cbd5e1;
+    border-radius:10px;
+    background:#f8fafc;
+  }
+  .notice-list {
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    margin-top:12px;
+  }
+  .notice-card {
+    border:1px solid #dbe4ee;
+    border-radius:12px;
+    background:#fff;
+    padding:14px;
+    box-shadow:0 1px 3px rgba(15, 23, 42, 0.06);
+  }
+  .notice-card.is-unread {
+    border-left:4px solid #0b4f9c;
+    background:#f8fbff;
+  }
+  .notice-card-head {
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:8px;
+  }
+  .notice-card-title {
+    font-size:16px;
+    font-weight:800;
+    color:#0f172a;
+    margin:0;
+  }
+  .notice-card-time {
+    color:#64748b;
+    font-size:13px;
+    white-space:nowrap;
+  }
+  .notice-card-message {
+    color:#334155;
+    line-height:1.6;
+    margin:8px 0 12px 0;
+    white-space:pre-line;
+  }
+  .notice-card-actions {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .roster-rules {
+    margin:0;
+    padding-left:18px;
+    color:#334155;
+  }
+  .roster-rules li {
+    margin-bottom:6px;
+  }
+  .roster-card {
+    border:1px solid #dbe4ee;
+    border-radius:12px;
+    background:#fff;
+    padding:14px;
+    box-shadow:0 1px 3px rgba(15, 23, 42, 0.06);
+  }
+  .roster-status-ok {
+    background:#ecfdf5;
+    color:#166534;
+    border:1px solid #bbf7d0;
+    padding:10px 12px;
+    border-radius:10px;
+    font-weight:700;
+  }
+  .roster-status-lock {
+    background:#fef2f2;
+    color:#991b1b;
+    border:1px solid #fecaca;
+    padding:10px 12px;
+    border-radius:10px;
+    font-weight:700;
+  }
+  .roster-inline-note {
+    color:#64748b;
+    font-size:13px;
+    margin-top:4px;
+  }
+  .roster-person-box {
+    border:1px solid #dbe4ee;
+    border-radius:10px;
+    padding:10px 12px;
+    background:#f8fafc;
+    margin-bottom:10px;
+  }
+  .roster-person-name {
+    font-weight:800;
+    color:#0f172a;
+    margin-bottom:4px;
+  }
+  .roster-person-meta {
+    color:#64748b;
+    font-size:13px;
+  }
+  .roster-form-table input,
+  .roster-form-table select,
+  .roster-form-table textarea {
+    min-width:140px;
+  }
+  .roster-form-table textarea {
+    min-height:44px;
+  }
+  .roster-week-badge {
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:999px;
+    background:#dbeafe;
+    color:#1d4ed8;
+    font-size:12px;
+    font-weight:700;
+  }
+  .roster-date-danger {
+    background:#fee2e2 !important;
+    border-color:#ef4444 !important;
+    color:#991b1b !important;
+    font-weight:700;
+  }
+  .roster-date-warning {
+    background:#ffedd5 !important;
+    border-color:#fb923c !important;
+    color:#9a3412 !important;
+    font-weight:700;
+  }
+  .roster-date-help {
+    margin-top:6px;
+    font-size:12px;
+    font-weight:700;
+    line-height:1.45;
+  }
+  .roster-date-help.is-danger {
+    color:#991b1b;
+  }
+  .roster-date-help.is-warning {
+    color:#9a3412;
+  }
+  .roster-legend {
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    margin:8px 0 12px 0;
+    font-size:13px;
+    color:#334155;
+  }
+  .roster-legend span {
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .roster-legend i {
+    display:inline-block;
+    width:16px;
+    height:16px;
+    border-radius:4px;
+    border:1px solid #cbd5e1;
+  }
+  .roster-legend .danger i {
+    background:#fee2e2;
+    border-color:#ef4444;
+  }
+  .roster-legend .warning i {
+    background:#ffedd5;
+    border-color:#fb923c;
+  }
+  .roster-mini-calendar {
+    margin-top:6px;
+    border:1px solid #dbe4ee;
+    border-radius:10px;
+    background:#fff;
+    padding:10px;
+  }
+  .roster-mini-grid {
+    display:grid;
+    grid-template-columns:repeat(7, minmax(0, 1fr));
+    gap:6px;
+    margin-top:8px;
+  }
+  .roster-mini-head {
+    background:#dbeafe;
+    color:#0f172a;
+    border-radius:6px;
+    padding:6px 4px;
+    text-align:center;
+    font-size:12px;
+    font-weight:700;
+  }
+  .roster-mini-cell {
+    border:1px solid #dbe4ee;
+    border-radius:8px;
+    min-height:44px;
+    padding:6px 4px;
+    background:#fff;
+    text-align:center;
+    cursor:pointer;
+    user-select:none;
+    font-size:12px;
+    font-weight:700;
+  }
+  .roster-mini-cell.is-empty {
+    background:#f8fafc;
+    border-style:dashed;
+    cursor:default;
+  }
+  .roster-mini-cell.is-sunday {
+    background:#fff7ed;
+  }
+  .roster-mini-cell.is-danger {
+    background:#fee2e2;
+    border-color:#ef4444;
+    color:#991b1b;
+    cursor:not-allowed;
+  }
+  .roster-mini-cell.is-warning {
+    background:#ffedd5;
+    border-color:#fb923c;
+    color:#9a3412;
+    cursor:not-allowed;
+  }
+  .roster-mini-cell.is-selected {
+    background:#dbeafe;
+    border-color:#60a5fa;
+    color:#1d4ed8;
+  }
+  .roster-selected-days {
+    margin-top:8px;
+    font-size:12px;
+    color:#334155;
+    line-height:1.5;
+  }
+  .roster-selected-days strong {
+    color:#0f172a;
+  }
+  .roster-hidden-dates {
+    display:none;
+  }
+  .calendar-matrix-wrap {
+    overflow:auto;
+    border:1px solid #dbe4ee;
+    border-radius:12px;
+    background:#fff;
+  }
+  .calendar-matrix {
+    border-collapse:collapse;
+    min-width:1200px;
+    width:max-content;
+  }
+  .calendar-matrix th,
+  .calendar-matrix td {
+    border:1px solid #dbe4ee;
+    text-align:center;
+    vertical-align:middle;
+    padding:6px 4px;
+  }
+  .calendar-matrix thead th {
+    background:#eff6ff;
+    color:#0f172a;
+    font-weight:800;
+  }
+  .calendar-matrix .sticky-left {
+    position:sticky;
+    left:0;
+    z-index:2;
+    background:#fff;
+    min-width:220px;
+    text-align:left;
+    padding:8px 10px;
+  }
+  .calendar-matrix thead .sticky-left {
+    background:#dbeafe;
+    z-index:3;
+  }
+  .calendar-matrix-day {
+    min-width:36px;
+    width:36px;
+    height:36px;
+    font-size:12px;
+    font-weight:700;
+  }
+  .calendar-matrix-user {
+    font-weight:800;
+    color:#0f172a;
+  }
+  .calendar-matrix-meta {
+    display:block;
+    margin-top:4px;
+    font-size:12px;
+    color:#64748b;
+    font-weight:600;
+  }
+</style>
+
+{% if block_tab %}
+<div class="leave-subtabs">
+  <a href="/leave-schedule?block_tab={{ block_tab }}&sub_tab=groups" class="leave-subtab {% if sub_tab == 'groups' %}is-active{% endif %}">Tạo nhóm đăng ký nghỉ</a>
+  <a href="/leave-schedule?block_tab={{ block_tab }}&sub_tab=register" class="leave-subtab {% if sub_tab == 'register' %}is-active{% endif %}">Đăng ký nghỉ</a>
+  <a href="/leave-schedule?block_tab={{ block_tab }}&sub_tab=roster" class="leave-subtab {% if sub_tab == 'roster' %}is-active{% endif %}">Phân lịch trực</a>
+  <a href="/leave-schedule?block_tab={{ block_tab }}&sub_tab=view_calendar&month={{ current_month }}" class="leave-subtab {% if sub_tab == 'view_calendar' %}is-active{% endif %}">Xem lịch nghỉ-trực</a>
+  <a href="/leave-schedule?block_tab={{ block_tab }}&sub_tab=leave_notice" class="leave-subtab {% if sub_tab == 'leave_notice' %}is-active{% endif %}">
+    Thông báo lịch nghỉ
+    {% if unread_leave_notice_count and unread_leave_notice_count > 0 %}
+      <span class="leave-subtab-badge">{{ unread_leave_notice_count }}</span>
+    {% endif %}
+  </a>
+  <a href="/leave-schedule?block_tab={{ block_tab }}&sub_tab=roster_notice" class="leave-subtab {% if sub_tab == 'roster_notice' %}is-active{% endif %}">
+    Thông báo lịch trực
+    {% if unread_roster_notice_count and unread_roster_notice_count > 0 %}
+      <span class="leave-subtab-badge">{{ unread_roster_notice_count }}</span>
+    {% endif %}
+  </a>
+</div>
+{% endif %}
+
+{% if message %}
+  <div class="alert-box alert-success">{{ message }}</div>
+{% endif %}
+{% if error %}
+  <div class="alert-box alert-error">{{ error }}</div>
+{% endif %}
+
+<script>
+  window.__rosterForbiddenByUser = {{ (roster_context.forbidden_map_by_user if roster_context is defined and roster_context else {}) | tojson }};
+</script>
+
+<div class="card" style="margin-bottom:14px;">
+  <h2 class="section-title">Nghỉ phép - Phân trực</h2>
+  {% if block_tab %}
+    <p class="section-subtitle">
+      Phạm vi hiện hành: <strong>{{ scope_display }}</strong> -
+      <strong>{{ block_label }}</strong>
+    </p>
+  {% else %}
+    <p class="section-subtitle">
+      Chọn một tab khối ở trên để vào các tab nghiệp vụ tương ứng.
+    </p>
+  {% endif %}
+</div>
+
+{% if not block_tab %}
+  <div class="card">
+    <div class="placeholder-box">
+      <p><strong>Chọn một khối ở thanh Tab phía trên để vào nghiệp vụ tương ứng.</strong></p>
+      <ul class="info-list">
+        <li><strong>Khối Hành chính</strong>: vào các Tab nghiệp vụ thuộc phạm vi hành chính.</li>
+        <li><strong>Khối Chuyên môn</strong>: vào các Tab nghiệp vụ thuộc phạm vi chuyên môn, bao gồm cả các vị trí chuyên môn thường như Bác sĩ, Dược sĩ, Điều dưỡng, Kỹ thuật viên, Hộ lý...</li>
+        <li>Cách hiển thị này bám cùng kiểu điều hướng với Tab <strong>Công việc</strong>: Tab mẹ ở menu chính, Tab con hiển thị ngay bên dưới.</li>
+      </ul>
+    </div>
+  </div>
+
+{% elif sub_tab == 'register' %}
+  <div class="card">
+    <h2 class="section-title">Đăng ký nghỉ</h2>
+    <p class="section-subtitle">
+      Nhóm áp dụng hiện tại của tài khoản: <strong>{{ group_label }}</strong>
+      {% if primary_unit_name %} - Đơn vị chính: <strong>{{ primary_unit_name }}</strong>{% endif %}
+    </p>
+  </div>
+  
+  <div class="card" style="margin-top:14px;">
+    <h3 class="section-title">Các ngày đã hết hạn mức trong ngày nghỉ của tôi</h3>
+    {% if exhausted_dates %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Ngày</th>
+              <th>Lý do khóa / hết quota</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in exhausted_dates %}
+            <tr>
+              <td>{{ item.date }}</td>
+              <td>{{ item.reason }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="placeholder-box">Hiện chưa có ngày nào của anh/chị rơi vào trạng thái hết hạn mức trong tháng đang xem.</div>
+    {% endif %}
+  </div>
+
+
+  <div class="card" style="margin-top:14px;">
+    <h3 class="section-title">Nguyên tắc đang áp dụng</h3>
+    <ul class="info-list">
+      <li><strong>F</strong>: Nghỉ phép năm - mặc định 12 ngày làm việc/năm; chỉ Admin được cộng thêm ngày.</li>
+      <li><strong>P</strong>: Nghỉ phép tháng - mỗi tuần được nghỉ 1 ngày.</li>
+      <li><strong>NL</strong>: Nghỉ lễ, tết - mức cấu hình hiện tại 12 ngày/năm.</li>
+	  <li><strong>ĐB</strong>: Nghỉ phép đặc biệt: Việc hiếu, hỷ - mức tối đa từng loại nghỉ theo Nội quy.</li>
+      <li><strong>H</strong>: Đi học. <strong>CT</strong>: Đi công tác.</li>
+      <li>Đơn chờ duyệt sẽ giữ suất và chặn người đăng ký sau trong cùng nhóm.</li>
+      <li>Trong tháng hiện tại, người dùng đăng ký lịch nghỉ cho <strong>tháng kế tiếp</strong>.</li>
+      <li>Mốc khóa đăng ký tháng sau được tính theo tháng hiện tại: tháng 31 ngày khóa sau ngày 26; tháng 30 ngày khóa sau ngày 25; tháng 2 khóa sau ngày 23.</li>
+	  <li>Đối với cơ chế NHÓM_LUÂN_PHIÊN: mỗi nhóm con chỉ được đăng ký đúng trong ngày ưu tiên của mình; trước ngày đó và sau ngày đó đều bị khóa.</li>
+      <li>Trong cùng nhóm con, user phải đăng ký theo thứ tự ưu tiên hiệu lực tháng này: vị trí 1 xong mới đến vị trí 2, vị trí 2 xong mới đến vị trí 3 và tuần tự như vậy.</li>
+      <li>Nếu chưa đến lượt, hệ thống sẽ báo: <strong>“Chưa đến lượt, bạn phải chờ người có vị trí ưu tiên cao hơn bạn hoàn thành đăng ký.”</strong></li>
+      <li>Khung hiện tại đã chia đúng theo 2 tab con cấp 1 là Khối chuyên môn và Khối hành chính.</li>
+    </ul>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <div class="toolbar">
+      <a href="/leave-schedule/export?month={{ current_month }}" class="btn btn-primary">Xuất Excel tháng nghỉ {{ current_month }}</a>
+    </div>
+
+    <form method="get" action="/leave-schedule" class="month-picker-row">
+      <input type="hidden" name="block_tab" value="{{ block_tab }}">
+      <input type="hidden" name="sub_tab" value="register">
+      <div class="field" style="max-width:220px;">
+        <label for="month_view">Chọn tháng nghỉ cần đăng ký</label>
+        <input type="month" id="month_view" name="month" value="{{ current_month }}" onchange="this.form.submit()">
+      </div>
+    </form>
+
+    <form method="post" action="/leave-schedule/add" id="leave-register-form">
+      <input type="hidden" name="block_tab" value="{{ block_tab }}">
+      <input type="hidden" name="month" value="{{ current_month }}">
+      <input type="hidden" name="selected_dates" id="selected_dates" value="">
+      <div class="form-grid">
+        <div class="field">
+          <label for="leave_type">Loại nghỉ</label>
+          <select name="leave_type" id="leave_type" required>
+            <option value="">-- Chọn loại nghỉ --</option>
+            {% for code, meta in leave_type_meta.items() %}
+              <option value="{{ code }}">{{ meta.symbol or code }} - {{ meta.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field full">
+          <label>Chọn ngày nghỉ trên lịch tháng</label>
+          <div class="calendar-grid">
+            <div class="calendar-head">Thứ 2</div>
+            <div class="calendar-head">Thứ 3</div>
+            <div class="calendar-head">Thứ 4</div>
+            <div class="calendar-head">Thứ 5</div>
+            <div class="calendar-head">Thứ 6</div>
+            <div class="calendar-head">Thứ 7</div>
+            <div class="calendar-head">CN</div>
+
+            {% set first_weekday = calendar_days[0].weekday if calendar_days else 0 %}
+            {% for _ in range(first_weekday) %}
+              <div class="calendar-cell is-empty"></div>
+            {% endfor %}
+
+            {% for d in calendar_days %}
+              {% set locked = d.date in group_rule_blocked_dates %}
+              <div class="calendar-cell {% if d.is_sunday %}is-sunday{% endif %} {% if locked %}is-locked{% endif %}"
+                   data-date="{{ d.date }}"
+                   data-locked-group="{% if locked %}1{% else %}0{% endif %}">
+                <div class="calendar-day-number">{{ d.day }}</div>
+                <div class="calendar-note">{{ d.date }}</div>
+              </div>
+            {% endfor %}
+          </div>
+          <div class="calendar-help" id="calendar_help" style="display:none;">
+            Bạn không được chọn những ngày màu đỏ vì đã hết hạn mức. Nếu bạn thật sự có nhu cầu nghỉ trong ngày đó, hãy thương lượng với người cùng nhóm và đề nghị cấp Quản lý điều chỉnh.
+          </div>
+          <div class="selected-days-box">
+            <strong>Ngày đã chọn:</strong>
+            <span id="selected_days_text">Chưa chọn ngày nào</span>
+          </div>
+        </div>
+        <div class="field full">
+          <label for="reason">Lý do</label>
+          <textarea name="reason" id="reason" placeholder="Nhập lý do đăng ký nghỉ"></textarea>
+        </div>
+        <div class="field full">
+          {% if can_submit %}
+            <button type="submit" class="btn btn-primary">Đăng ký</button>
+          {% else %}
+            <div class="alert-box alert-error" style="margin-bottom:0;">
+              {{ can_submit_message }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+  
+  {% if can_approve %}
+  <div class="card" style="margin-top:14px;">
+    <h3 class="section-title">Phiếu nghỉ chờ xử lý của đơn vị</h3>
+    <p class="section-subtitle">
+      Đây là bảng thao tác chính dành cho người duyệt: xem đúng ngày nghỉ đã đăng ký, nhập lý do từ chối và bấm nút Từ chối ngay trên từng dòng phiếu.
+    </p>
+    {% if schedule_summary %}
+      <div class="toolbar" style="margin-bottom:12px;">
+        <div class="field" style="min-width:260px; max-width:320px; margin-bottom:0;">
+          <label for="schedule_group_type_filter">Loại nhóm nghỉ</label>
+          <select id="schedule_group_type_filter">
+            <option value="">Tất cả</option>
+          </select>
+        </div>
+        <div class="field" style="min-width:260px; max-width:320px; margin-bottom:0;">
+          <label for="schedule_child_group_filter">Nhóm con</label>
+          <select id="schedule_child_group_filter">
+            <option value="">Tất cả</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table" id="schedule_summary_table">
+          <thead>
+          <tr>
+              <th>Họ tên</th>
+              <th>Đơn vị</th>
+              <th>Nhóm/Bộ phận</th>
+              <th>Loại nghỉ</th>
+              <th>Ngày nghỉ</th>
+              <th>Trạng thái</th>
+              <th>Lý do</th>
+              <th>Từ chối</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in schedule_summary %}
+            <tr
+              data-filter-group-type="{{ item.filter_group_type_code or '' }}"
+              data-filter-group-type-label="{{ item.filter_group_type_label or '' }}"
+              data-filter-child-group="{{ item.filter_child_group_id or '' }}"
+              data-filter-child-group-label="{{ item.filter_child_group_name or '' }}"
+            >
+              <td>{{ item.user_name }}</td>
+              <td>{{ item.unit_name or '-' }}</td>
+              <td>{{ item.group_label or '-' }}</td>
+              <td>{{ item.symbol }} - {{ item.leave_type_label }}</td>
+              <td>{{ item.start_date or '-' }}</td>
+              <td>
+                <span class="tag-status {% if item.status == 'APPROVED' %}tag-approved{% elif item.status in ['CANCELLED', 'REJECTED'] %}tag-cancelled{% else %}tag-pending{% endif %}">
+                  {{ item.status_label or {'PENDING': 'Chờ duyệt', 'APPROVED': 'Đã duyệt', 'REJECTED': 'Đã từ chối', 'CANCELLED': 'Đã hủy'}.get(item.status, item.status) }}
+                </span>
+              </td>
+
+              {% if item.can_reject %}
+              <td>
+                <input
+                  type="text"
+                  name="reject_reason"
+                  value="{{ item.reject_reason or '' }}"
+                  placeholder="Nhập lý do từ chối và bấm Từ chối"
+                  style="min-width:220px;"
+                  form="reject_form_{{ item.id }}"
+                >
+              </td>
+              <td>
+                <form
+                  id="reject_form_{{ item.id }}"
+                  method="post"
+                  action="/leave-schedule/reject"
+                  onsubmit="return confirm('Xác nhận từ chối đăng ký nghỉ này?');"
+                  style="margin:0;"
+                >
+                  <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                  <input type="hidden" name="month" value="{{ current_month }}">
+                  <input type="hidden" name="request_id" value="{{ item.id }}">
+                  <button type="submit" class="action-btn btn-danger">Từ chối</button>
+                </form>
+              </td>
+              {% else %}
+              <td>{{ item.reject_reason or '-' }}</td>
+              <td>-</td>
+              {% endif %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="placeholder-box">Chưa có dữ liệu lịch nghỉ trong phạm vi đơn vị để điều chỉnh.</div>
+    {% endif %}
+  </div>
+<div class="card" style="margin-top:14px;">
+  <h3 class="section-title">Điều chỉnh / Hoán đổi ngày nghỉ</h3>
+  <p class="section-subtitle">
+    Dùng chức năng này khi cần điều chỉnh hoặc hoán đổi ngày nghỉ giữa 2 phiếu đang chờ duyệt. Sau khi phê duyệt, hệ thống sẽ cập nhật lại ngày nghỉ của cả 2 phiếu.
+  </p>
+
+  {% if schedule_summary %}
+    <form method="post" action="/leave-schedule/swap-request" id="leave_swap_form" style="margin-top:12px;" onsubmit="return validateLeaveSwapForm();">
+      <input type="hidden" name="block_tab" value="{{ block_tab }}">
+      <input type="hidden" name="month" value="{{ current_month }}">
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="request_a_id">Phiếu nghỉ thứ nhất</label>
+          <select name="request_a_id" id="request_a_id" required>
+            <option value="">-- Chọn phiếu nghỉ thứ nhất --</option>
+            {% for item in schedule_summary %}
+              {% if item.status == 'PENDING' %}
+                <option value="{{ item.id }}">
+                  {{ item.user_name }} | {{ item.date_label }} | {{ item.symbol }} - {{ item.leave_type_label }}
+                </option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="request_b_id">Phiếu nghỉ thứ hai</label>
+          <select name="request_b_id" id="request_b_id" required>
+            <option value="">-- Chọn phiếu nghỉ thứ hai --</option>
+            {% for item in schedule_summary %}
+              {% if item.status == 'PENDING' %}
+                <option value="{{ item.id }}">
+                  {{ item.user_name }} | {{ item.date_label }} | {{ item.symbol }} - {{ item.leave_type_label }}
+                </option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field full">
+          <label for="swap_note">Ghi chú điều chỉnh / hoán đổi</label>
+          <textarea name="swap_note" id="swap_note" placeholder="Nhập ghi chú điều chỉnh hoặc lý do hoán đổi"></textarea>
+        </div>
+
+        <div class="field full">
+          <button type="submit" class="btn btn-warning">Tạo yêu cầu điều chỉnh / Hoán đổi</button>
+        </div>
+      </div>
+    </form>
+  {% else %}
+    <div class="placeholder-box">Chưa có dữ liệu phiếu nghỉ để tạo yêu cầu điều chỉnh / Hoán đổi.</div>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-top:14px;">
+  <h3 class="section-title">Yêu cầu điều chỉnh / Hoán đổi chờ phê duyệt</h3>
+
+  {% if pending_swaps %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Người thứ nhất</th>
+            <th>Người thứ hai</th>
+            <th>Ghi chú</th>
+            <th>Trạng thái</th>
+            <th>Phê duyệt</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in pending_swaps %}
+          <tr>
+            <td>{{ item.user_a_name or '-' }}</td>
+            <td>{{ item.user_b_name or '-' }}</td>
+            <td>{{ item.swap_note or '-' }}</td>
+            <td>
+              <span class="tag-status {% if item.status == 'APPROVED' %}tag-approved{% else %}tag-pending{% endif %}">
+                {% if item.status == 'APPROVED' %}Đã duyệt{% else %}Chờ duyệt{% endif %}
+              </span>
+            </td>
+            <td>
+              {% if item.status == 'PENDING' %}
+              <form method="post" action="/leave-schedule/swap-approve" onsubmit="return confirm('Xác nhận phê duyệt điều chỉnh lịch nghỉ này?');">
+                <input type="hidden" name="swap_id" value="{{ item.id }}">
+                <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                <input type="hidden" name="month" value="{{ current_month }}">
+                <button type="submit" class="action-btn btn-success">Phê duyệt điều chỉnh</button>
+              </form>
+              {% else %}
+                -
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="placeholder-box">Hiện chưa có yêu cầu điều chỉnh / hoán đổi nào đang chờ phê duyệt.</div>
+  {% endif %}
+</div>
+  <div class="card" style="margin-top:14px;">
+    <div class="toolbar" style="justify-content:space-between;">
+      <div>
+        <h3 class="section-title" style="margin-bottom:6px;">Tổng hợp đăng ký nghỉ theo nhân sự</h3>
+        <p class="section-subtitle" style="margin-bottom:0;">Bảng này chỉ phục vụ nhìn tổng quan ngày nghỉ của từng nhân sự trong tháng và Phê duyệt chung.</p>
+      </div>
+      {% if approval_summary %}
+      <form method="post" action="/leave-schedule/approve-bulk" onsubmit="return confirm('Xác nhận phê duyệt toàn bộ phiếu nghỉ đang chờ duyệt trong tháng này?');">
+        <input type="hidden" name="block_tab" value="{{ block_tab }}">
+        <input type="hidden" name="month" value="{{ current_month }}">
+        <button type="submit" class="action-btn btn-success">Phê duyệt chung</button>
+      </form>
+      {% endif %}
+    </div>
+
+    {% if approval_summary %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Họ tên</th>
+              <th>Đơn vị</th>
+              <th>Nhóm/Bộ phận</th>
+              <th>Nghỉ phép tháng</th>
+              <th>Nghỉ phép năm</th>
+              <th>Nghỉ lễ, tết</th>
+              <th>Nghỉ phép đặc biệt</th>
+              <th>Đi công tác</th>
+              <th>Đi học</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in approval_summary %}
+            <tr>
+              <td>{{ item.user_name }}</td>
+              <td>{{ item.unit_name or '-' }}</td>
+              <td>{{ item.group_label or '-' }}</td>
+              <td>{{ item.P }}</td>
+              <td>{{ item.F }}</td>
+              <td>{{ item.NL }}</td>
+              <td>{{ item.DB }}</td>
+              <td>{{ item.CT }}</td>
+              <td>{{ item.H }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="placeholder-box">Hiện không có phiếu nghỉ nào đang chờ duyệt trong phạm vi tháng đã chọn.</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if can_admin_adjust %}
+  <div class="card" style="margin-top:14px;">
+    <h3 class="section-title">Admin cộng thêm ngày phép năm</h3>
+    <p class="section-subtitle">Chức năng này chỉ dành cho Admin để mở rộng hạn mức nghỉ phép năm của từng người dùng.</p>
+    <form method="post" action="/leave-schedule/adjust-annual">
+      <div class="form-grid">
+        <div class="field">
+          <label for="user_id">Mã người dùng</label>
+          <input type="text" name="user_id" id="user_id" placeholder="Nhập user_id cần cộng thêm" required>
+        </div>
+        <div class="field">
+          <label for="leave_year">Năm</label>
+          <input type="number" name="leave_year" id="leave_year" value="{{ current_month[:4] }}" required>
+        </div>
+        <div class="field">
+          <label for="extra_days">Số ngày cộng thêm</label>
+          <input type="number" name="extra_days" id="extra_days" min="1" value="1" required>
+        </div>
+        <div class="field full">
+          <label for="adjust_reason">Lý do cộng thêm</label>
+          <textarea name="reason" id="adjust_reason" placeholder="Nhập lý do cộng thêm ngày phép năm"></textarea>
+        </div>
+        <div class="field full">
+          <button type="submit" class="btn btn-warning">Cộng thêm ngày phép năm</button>
+        </div>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if not can_approve %}
+  <div class="card" style="margin-top:14px;">
+    <h3 class="section-title">Danh sách đăng ký nghỉ của tôi</h3>
+
+    <form method="get" action="/leave-schedule" class="month-picker-row" style="margin-bottom:12px;">
+      <input type="hidden" name="block_tab" value="{{ block_tab }}">
+      <input type="hidden" name="sub_tab" value="register">
+      <input type="hidden" name="list_mode" value="{{ current_list_mode }}">
+      <div class="field" style="max-width:220px;">
+        <label for="request_month">Chọn tháng hiển thị</label>
+        <input
+          type="month"
+          id="request_month"
+          name="request_month"
+          value="{{ request_month }}"
+          onchange="this.form.submit()"
+        >
+      </div>
+    </form>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Họ tên</th>
+            <th>Nhóm/Bộ phận</th>
+            <th>Loại nghỉ</th>
+            <th>Thời gian</th>
+            <th>Số ngày công</th>
+            <th>Lý do</th>
+            <th>Trạng thái</th>
+            <th>Người duyệt</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in requests %}
+          <tr>
+            <td>{{ item.user_name }}</td>
+            <td>{{ item.group_label }}</td>
+            <td>{{ item.symbol }} - {{ item.leave_type_label }}</td>
+            <td>{{ item.start_date }}<br>đến {{ item.end_date }}</td>
+            <td>{{ item.day_count }}</td>
+            <td>{{ item.reason or '-' }}</td>
+            <td>
+              <span class="tag-status {% if item.status == 'APPROVED' %}tag-approved{% elif item.status == 'CANCELLED' %}tag-cancelled{% else %}tag-pending{% endif %}">
+                {{ item.status_label }}
+              </span>
+            </td>
+            <td>
+              {% if item.approved_by_name %}
+                {{ item.approved_by_name }}<br><span class="muted-note">{{ item.approved_role or '' }}</span>
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>
+              <div class="toolbar" style="margin:0;">
+                {% if item.can_cancel %}
+                <form method="post" action="/leave-schedule/cancel" onsubmit="return confirm('Xác nhận hủy đăng ký nghỉ này?');">
+                  <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                  <input type="hidden" name="request_id" value="{{ item.id }}">
+                  <button type="submit" class="action-btn btn-danger">Hủy</button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9">Chưa có dữ liệu đăng ký nghỉ.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+{% elif sub_tab == 'roster' %}
+  <div class="card">
+    <h2 class="section-title">Phân trực</h2>
+    <p class="section-subtitle">
+      Tháng hiện tại thực hiện phân trực cho <strong>tháng sau</strong>. Chỉ được lập lịch sau khi đã có kết quả phê duyệt nghỉ trong phạm vi đang xem.
+    </p>
+    <ul class="roster-rules">
+      <li>Ngày phân trực không được trùng với ngày nghỉ đã phê duyệt.</li>
+      <li>Ngày phân trực không được liền kề trước ngày nghỉ đã phê duyệt.</li>
+      <li>Khối hành chính và khối chuyên môn áp dụng danh sách nhân sự khác nhau theo đúng vị trí quản lý.</li>
+      <li>Sau khi lịch trực đã phê duyệt, có thể gửi yêu cầu điều chỉnh và phê duyệt điều chỉnh.</li>
+    </ul>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <form method="get" action="/leave-schedule" class="month-picker-row">
+      <input type="hidden" name="block_tab" value="{{ block_tab }}">
+      <input type="hidden" name="sub_tab" value="roster">
+      <div class="field" style="max-width:220px;">
+        <label for="roster_month">Tháng phân trực</label>
+        <input type="month" id="roster_month" name="month" value="{{ current_month }}" onchange="this.form.submit()">
+      </div>
+    </form>
+
+    {% if roster_context.can_open_roster %}
+      <div class="roster-status-ok">Đã có kết quả phê duyệt nghỉ. Có thể lập và phê duyệt lịch trực cho tháng {{ current_month }}.</div>
+    {% else %}
+      <div class="roster-status-lock">Chưa có kết quả phê duyệt nghỉ trong phạm vi hiện hành. Nút lập lịch và phê duyệt lịch trực đang bị khóa.</div>
+    {% endif %}
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <h3 class="section-title">Danh sách nhân sự thuộc phạm vi được phân trực</h3>
+    {% if roster_context.candidates %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Họ tên</th>
+              <th>Đơn vị</th>
+              <th>Vai trò</th>
+              <th>Ngày không được xếp trực</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in roster_context.candidates %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td>
+                {% if item.unit_id == (scope_subunit_id or '') %}
+                  {{ scope_subunit_name or scope_unit_name or '-' }}
+                {% else %}
+                  {{ scope_unit_name or '-' }}
+                {% endif %}
+              </td>
+              <td>{{ (item.role_codes or [])|join(', ') }}</td>
+              <td>
+                {% set forbidden_map = roster_context.forbidden_map_by_user.get(item.id, {}) %}
+                {% if forbidden_map %}
+                  {% for k, v in forbidden_map.items() %}
+                    <div>{{ k }} - {{ v }}</div>
+                  {% endfor %}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="placeholder-box">Không có nhân sự nào thuộc phạm vi được phép phân trực theo vai trò hiện tại.</div>
+    {% endif %}
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <h3 class="section-title">Lập lịch trực</h3>
+
+    {% if roster_context.can_open_roster and roster_context.candidates %}
+      <form method="post" action="/leave-schedule/roster/create-draft" id="roster_draft_form">
+        <input type="hidden" name="block_tab" value="{{ block_tab }}">
+        <input type="hidden" name="month" value="{{ current_month }}">
+
+        <div class="toolbar">
+          <button type="button" class="btn btn-secondary" onclick="addRosterRow()">Thêm dòng</button>
+          <span class="roster-inline-note">Mỗi dòng là 1 nhân sự, chọn được nhiều ngày để phân trực.</span>
+        </div>
+
+        <div class="roster-legend">
+          <span class="danger"><i></i> Ngày nghỉ đã duyệt của nhân sự đang phân trực</span>
+          <span class="warning"><i></i> Ngày liền trước ngày nghỉ của nhân sự đang phân trực</span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table roster-form-table" id="roster_draft_table">
+            <thead>
+              <tr>
+                <th>Nhân sự</th>
+                <th>Chọn nhiều ngày trực</th>
+                <th>Ghi chú chung cho nhân sự</th>
+                <th>Xóa dòng</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="js-roster-row">
+                <td>
+                  <select required class="js-roster-user" onchange="bindRosterCalendarForRow(this)">
+                    <option value="">-- Chọn nhân sự --</option>
+                    {% for item in roster_context.candidates %}
+                      <option value="{{ item.id }}">{{ item.name }}</option>
+                    {% endfor %}
+                  </select>
+                </td>
+                <td>
+                  <div class="roster-mini-calendar">
+                    <div class="roster-mini-grid">
+                      <div class="roster-mini-head">T2</div>
+                      <div class="roster-mini-head">T3</div>
+                      <div class="roster-mini-head">T4</div>
+                      <div class="roster-mini-head">T5</div>
+                      <div class="roster-mini-head">T6</div>
+                      <div class="roster-mini-head">T7</div>
+                      <div class="roster-mini-head">CN</div>
+
+                      {% set first_weekday = calendar_days[0].weekday if calendar_days else 0 %}
+                      {% for _ in range(first_weekday) %}
+                        <div class="roster-mini-cell is-empty"></div>
+                      {% endfor %}
+
+                      {% for d in calendar_days %}
+                        <div
+                          class="roster-mini-cell {% if d.is_sunday %}is-sunday{% endif %}"
+                          data-date="{{ d.date }}"
+                          onclick="toggleRosterDay(this)"
+                        >
+                          {{ d.day }}
+                        </div>
+                      {% endfor %}
+                    </div>
+
+                    <div class="roster-date-help" style="display:none;"></div>
+                    <div class="roster-selected-days">
+                      <strong>Ngày đã chọn:</strong>
+                      <span class="js-roster-selected-text">Chưa chọn ngày nào</span>
+                    </div>
+                    <div class="roster-hidden-dates js-roster-hidden-dates"></div>
+                  </div>
+                </td>
+                <td>
+                  <textarea class="js-roster-note" placeholder="Ghi chú chung cho nhân sự này"></textarea>
+                </td>
+                <td>
+                  <button type="button" class="btn btn-danger" onclick="removeRosterRow(this)">Xóa</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="toolbar" style="margin-top:12px;">
+          <button type="submit" class="btn btn-primary">Lưu lịch trực</button>
+        </div>
+      </form>
+
+      {% if roster_context.plan_header and roster_context.plan_header.status != 'APPROVED' %}
+      <div class="toolbar" style="margin-top:10px;">
+        <form method="post" action="/leave-schedule/roster/approve" onsubmit="return confirm('Xác nhận phê duyệt lịch trực tháng này?');">
+          <input type="hidden" name="block_tab" value="{{ block_tab }}">
+          <input type="hidden" name="month" value="{{ current_month }}">
+          <button type="submit" class="btn btn-success">Phê duyệt lịch trực</button>
+        </form>
+      </div>
+      {% endif %}
+    {% else %}
+      <div class="placeholder-box">Chưa đủ điều kiện để lập lịch trực.</div>
+    {% endif %}
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <h3 class="section-title">Lịch trực hiện có</h3>
+    {% if roster_context.plan_header %}
+      {% set roster_status_map = {
+        'DRAFT': 'Chờ duyệt',
+        'PENDING': 'Chờ duyệt',
+        'APPROVED': 'Đã duyệt',
+        'REJECTED': 'Đã từ chối',
+        'CANCELLED': 'Đã hủy'
+      } %}
+      {% set roster_status_key = (roster_context.plan_header.status or '')|upper %}
+      <div class="toolbar">
+        <div class="roster-person-box" style="width:100%;">
+          <div class="roster-person-name">Trạng thái kế hoạch: {{ roster_status_map.get(roster_status_key, roster_context.plan_header.status or '-') }}</div>
+          <div class="roster-person-meta">
+            Người lập: {{ roster_context.plan_header.planner_user_name or '-' }}
+            {% if roster_context.plan_header.approved_by_name %}
+              | Người duyệt: {{ roster_context.plan_header.approved_by_name }}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      {% if roster_context.plan_items %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Ngày trực</th>
+                <th>Tuần</th>
+                <th>Nhân sự</th>
+                <th>Nội dung</th>
+                <th>Điều chỉnh</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in roster_context.plan_items %}
+              <tr>
+                <td>{{ item.work_date }}</td>
+                <td><span class="roster-week-badge">Tuần {{ ((item.work_date[-2:]|int - 1) // 7) + 1 }}</span></td>
+                <td>{{ item.user_name }}</td>
+                <td>{{ item.note or '-' }}</td>
+                <td>
+                  {% if roster_context.plan_header.status == 'APPROVED' %}
+                  <form method="post" action="/leave-schedule/roster/request-adjust">
+                    <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                    <input type="hidden" name="month" value="{{ current_month }}">
+                    <input type="hidden" name="roster_item_id" value="{{ item.id }}">
+                    <div class="form-grid" style="grid-template-columns:160px 1fr auto; gap:8px;">
+                      <div class="field">
+                        <input type="date" name="new_work_date" required>
+                      </div>
+                      <div class="field">
+                        <input type="text" name="reason" placeholder="Lý do điều chỉnh">
+                      </div>
+                      <div class="field">
+                        <button type="submit" class="btn btn-warning">Gửi điều chỉnh</button>
+                      </div>
+                    </div>
+                  </form>
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="placeholder-box">Chưa có dòng lịch trực nào.</div>
+      {% endif %}
+    {% else %}
+      <div class="placeholder-box">Chưa có kế hoạch lịch trực cho tháng này.</div>
+    {% endif %}
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <h3 class="section-title">Điều chỉnh lịch trực chờ phê duyệt</h3>
+    {% if roster_context.pending_adjustments %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nhân sự</th>
+              <th>Ngày cũ</th>
+              <th>Ngày mới</th>
+              <th>Lý do</th>
+              <th>Phê duyệt</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in roster_context.pending_adjustments %}
+            <tr>
+              <td>{{ item.user_name }}</td>
+              <td>{{ item.old_work_date }}</td>
+              <td>{{ item.new_work_date }}</td>
+              <td>{{ item.reason or '-' }}</td>
+              <td>
+                <form method="post" action="/leave-schedule/roster/approve-adjust" onsubmit="return confirm('Xác nhận phê duyệt điều chỉnh lịch trực này?');">
+                  <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                  <input type="hidden" name="month" value="{{ current_month }}">
+                  <input type="hidden" name="adjustment_id" value="{{ item.id }}">
+                  <button type="submit" class="btn btn-success">Phê duyệt điều chỉnh</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="placeholder-box">Hiện chưa có yêu cầu điều chỉnh lịch trực nào đang chờ duyệt.</div>
+    {% endif %}
+  </div>
+
+{% elif sub_tab == 'groups' %}
+  <div class="card">
+    <h2 class="section-title">Tạo nhóm</h2>
+    <p class="section-subtitle">
+      Thiết lập nhóm đăng ký nghỉ cho <strong>{{ block_label }}</strong> trong phạm vi
+      <strong>{{ scope_display }}</strong>.
+    </p>
+
+    {% if can_manage_groups %}
+      <form method="post" action="/leave-schedule/groups/create">
+        <input type="hidden" name="block_tab" value="{{ block_tab }}">
+        <div class="form-grid">
+          <div class="field">
+            <label for="group_type">Thành lập nhóm</label>
+            <select name="group_type" id="group_type" required>
+              <option value="">-- Chọn loại nhóm --</option>
+              {% for item in group_defs %}
+                <option value="{{ item.type }}">{{ item.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn btn-primary">Thành lập nhóm</button>
+          </div>
+        </div>
+      </form>
+    {% else %}
+      <div class="alert-box alert-error">Bạn không có quyền thành lập nhóm trong khối này.</div>
+    {% endif %}
+  </div>
+
+  {% if block_tab in ['HANH_CHINH', 'CHUYEN_MON'] %}
+  <div class="card" style="margin-top:14px;">
+    <h3 class="section-title">Cơ chế riêng: NHÓM_LUÂN_PHIÊN</h3>
+    <p class="section-subtitle">
+      1 nhóm cha nghiệp vụ, nhiều nhóm con ưu tiên do người có thẩm quyền tạo và tự đặt tên.
+      Ngày chốt của nhóm ưu tiên 1 do người có thẩm quyền chọn; các nhóm kế tiếp tự cộng thêm 1 ngày.
+    </p>
+
+    <div class="card" style="margin-top:12px; border:1px solid #dbe4ee; box-shadow:none;">
+      <h4 class="section-title" style="font-size:16px; margin-bottom:8px;">
+        Thứ tự hiệu lực tháng hiện tại {% if priority_current_month %}({{ priority_current_month }}){% endif %}
+      </h4>
+      <p class="section-subtitle" style="margin-bottom:10px;">
+        Đây là thứ tự luân phiên đang có hiệu lực trong tháng hiện tại.
+      </p>
+
+      {% if priority_parents_data %}
+        {% for parent in priority_parents_data %}
+          <div class="table-wrap" style="margin-bottom:14px;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th colspan="4">Nhóm cha: {{ parent.group_name }}</th>
+                </tr>
+                <tr>
+                  <th>Nhóm con</th>
+                  <th>Vị trí hiệu lực</th>
+                  <th>Ngày đăng ký</th>
+                  <th>Thứ tự user hiệu lực</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for child in parent.children %}
+                <tr>
+                  <td>{{ child.group_name }}</td>
+                  <td>{{ child.effective_priority_order }}</td>
+                  <td>{{ child.deadline_day }}</td>
+                  <td>
+                    {% if child.members %}
+                      {% for member in child.members %}
+                        <div>
+                          {{ member.user_name }}:
+                          vị trí gốc {{ member.member_order }},
+                          vị trí hiệu lực {{ member.effective_member_order }}
+                        </div>
+                      {% endfor %}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="placeholder-box">Chưa có dữ liệu NHÓM_LUÂN_PHIÊN của tháng hiện tại.</div>
+      {% endif %}
+    </div>
+
+    <div class="card" style="margin-top:12px; border:1px solid #dbe4ee; box-shadow:none;">
+      <h4 class="section-title" style="font-size:16px; margin-bottom:8px;">
+        Thứ tự hiệu lực tháng kế tiếp {% if priority_next_month %}({{ priority_next_month }}){% endif %}
+      </h4>
+      <p class="section-subtitle" style="margin-bottom:10px;">
+        Đây là thứ tự sẽ được xoay và áp dụng cho tháng kế tiếp, để người quản lý đối chiếu trước khi đến kỳ đăng ký.
+      </p>
+
+      {% if priority_parents_next_data %}
+        {% for parent in priority_parents_next_data %}
+          <div class="table-wrap" style="margin-bottom:14px;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th colspan="4">Nhóm cha: {{ parent.group_name }}</th>
+                </tr>
+                <tr>
+                  <th>Nhóm con</th>
+                  <th>Vị trí hiệu lực</th>
+                  <th>Ngày đăng ký</th>
+                  <th>Thứ tự user hiệu lực</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for child in parent.children %}
+                <tr>
+                  <td>{{ child.group_name }}</td>
+                  <td>{{ child.effective_priority_order }}</td>
+                  <td>{{ child.deadline_day }}</td>
+                  <td>
+                    {% if child.members %}
+                      {% for member in child.members %}
+                        <div>
+                          {{ member.user_name }}:
+                          vị trí gốc {{ member.member_order }},
+                          vị trí hiệu lực {{ member.effective_member_order }}
+                        </div>
+                      {% endfor %}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="placeholder-box">Chưa có dữ liệu NHÓM_LUÂN_PHIÊN của tháng kế tiếp.</div>
+      {% endif %}
+    </div>
+    {% if can_manage_groups %}
+      <form method="post" action="/leave-schedule/groups/create-priority-parent">
+        <input type="hidden" name="block_tab" value="{{ block_tab }}">
+        <div class="form-grid">
+          <div class="field">
+            <label for="priority_parent_name">Tên nhóm cha</label>
+            <input type="text" id="priority_parent_name" name="parent_name" value="NHÓM_LUÂN_PHIÊN" required>
+          </div>
+          <div class="field">
+            <label for="priority_base_day">Ngày chốt của nhóm ưu tiên 1</label>
+            <select id="priority_base_day" name="priority_base_day" required>
+              <option value="">-- Chọn ngày --</option>
+              {% for d in range(1, 32) %}
+                <option value="{{ d }}">{{ d }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="priority_max_off">Số người nghỉ tối đa trong 1 ngày</label>
+            <input type="number" id="priority_max_off" name="max_off_per_day" min="1" value="1" required>
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn btn-primary">Tạo nhóm luân phiên</button>
+          </div>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+  {% endif %}
+  
+    {% if block_tab in ['HANH_CHINH', 'CHUYEN_MON'] and priority_parents_data %}
+  <div class="card" style="margin-top:14px;">
+    <h3 class="section-title">Danh sách cơ chế ưu tiên cha - con</h3>
+
+    {% for p in priority_parents_data %}
+      <div class="placeholder-box" style="margin-bottom:14px;">
+        <p style="margin:0 0 10px 0;">
+          <strong>{{ p.group_name }}</strong>
+          {% if p.is_active %}
+            <span class="tag-status tag-approved">Đang hiệu lực</span>
+          {% else %}
+            <span class="tag-status tag-cancelled">Đang khóa</span>
+          {% endif %}
+        </p>
+        <p class="muted-note" style="margin-bottom:10px;">
+          Ngày chốt nhóm ưu tiên 1: <strong>{{ p.priority_base_day }}</strong> |
+          Quota nghỉ/ngày: <strong>{{ p.max_off_per_day }}</strong>
+        </p>
+
+        {% if can_manage_groups %}
+        <form method="post" action="/leave-schedule/groups/create-priority-child" style="margin-bottom:12px;">
+          <input type="hidden" name="block_tab" value="{{ block_tab }}">
+          <input type="hidden" name="parent_group_id" value="{{ p.id }}">
+          <div class="form-grid">
+            <div class="field">
+              <label>Tên nhóm con ưu tiên</label>
+              <input type="text" name="child_name" placeholder="Nhập tên nhóm con" required>
+            </div>
+            <div class="field">
+              <label>&nbsp;</label>
+              <button type="submit" class="btn btn-secondary">Tạo nhóm con</button>
+            </div>
+          </div>
+        </form>
+        {% endif %}
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width:220px;">Nhóm con</th>
+                <th style="width:120px;">Thứ tự gốc</th>
+                <th style="width:160px;">Ưu tiên hiệu lực</th>
+                <th style="width:150px;">Ngày chốt tháng này</th>
+                <th style="width:180px;">Hạn mức nghỉ/ngày</th>
+                <th>Thành viên</th>
+                <th style="width:260px;">Thêm thành viên</th>
+                <th style="width:280px;">Cập nhật nhóm con</th>
+                <th style="width:220px;">Khóa / Xóa</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in p.children %}
+              <tr>
+                <td><strong>{{ c.group_name }}</strong></td>
+                <td>{{ c.priority_order }}</td>
+                <td>{{ c.effective_priority_order }}</td>
+                <td>{{ c.deadline_day }}</td>
+				<td>{{ c.effective_max_off_per_day or p.max_off_per_day }}</td>
+                <td>
+                  {% if c.members %}
+                    <ul class="info-list" style="margin:0;">
+                      {% for m in c.members %}
+                        <li style="margin-bottom:8px;">
+                          <strong>{{ m.user_name }}</strong>
+                          <span class="muted-note">
+                            - gốc: {{ m.member_order }}
+                            - hiệu lực tháng này: {{ m.effective_member_order }}
+                          </span>
+                          {% if can_manage_groups %}
+                            <form method="post" action="/leave-schedule/groups/remove-member" style="display:inline-block;margin-left:8px;" onsubmit="return confirm('Gỡ người dùng này khỏi nhóm con?');">
+                              <input type="hidden" name="member_id" value="{{ m.id }}">
+                              <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                              <button type="submit" class="btn btn-danger" style="padding:4px 10px;">Gỡ</button>
+                            </form>
+                          {% endif %}
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <span class="muted-note">Chưa có thành viên.</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if can_manage_groups %}
+                    <form method="post" action="/leave-schedule/groups/add-member">
+                      <input type="hidden" name="group_id" value="{{ c.id }}">
+                      <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                      <div class="field" style="margin-bottom:8px;">
+                        <select name="user_id" required>
+                          <option value="">-- Chọn người dùng --</option>
+                          {% for u in c.assignable_users %}
+                            <option value="{{ u.id }}">{{ u.name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <button type="submit" class="btn btn-secondary">Thêm vào nhóm con</button>
+                    </form>
+                  {% else %}
+                    <span class="muted-note">Không có quyền cập nhật.</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <form method="post" action="/leave-schedule/groups/update-priority-child">
+                    <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                    <input type="hidden" name="child_group_id" value="{{ c.id }}">
+                    <div class="form-grid" style="grid-template-columns:1fr 1fr; gap:8px;">
+                      <div class="field">
+                        <label>Hạn mức</label>
+                        <input type="number" name="custom_max_off_per_day" min="0" value="{{ c.effective_max_off_per_day or p.max_off_per_day }}" required>
+                      </div>
+                      <div class="field">
+                        <label>Ngày chốt</label>
+                        <input type="number" name="custom_deadline_day" min="1" max="31" value="{{ c.deadline_day }}" required>
+                      </div>
+                      <div class="field full">
+                        <button type="submit" class="btn btn-warning">Cập nhật</button>
+                      </div>
+                    </div>
+                  </form>
+                </td>
+                <td>
+                  <div class="toolbar" style="margin:0;">
+                    <form method="post" action="/leave-schedule/groups/toggle-lock" onsubmit="return confirm('Xác nhận thay đổi trạng thái khóa/mở khóa nhóm con này?');">
+                      <input type="hidden" name="group_id" value="{{ c.id }}">
+                      <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                      <input type="hidden" name="action" value="{% if c.is_active %}lock{% else %}unlock{% endif %}">
+                      <button type="submit" class="action-btn {% if c.is_active %}btn-warning{% else %}btn-success{% endif %}">
+                        {% if c.is_active %}Khóa nhóm con{% else %}Mở khóa nhóm con{% endif %}
+                      </button>
+                    </form>
+                    <form method="post" action="/leave-schedule/groups/delete" onsubmit="return confirm('Xác nhận xóa nhóm con này?');">
+                      <input type="hidden" name="group_id" value="{{ c.id }}">
+                      <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                      <button type="submit" class="action-btn btn-danger">Xóa nhóm con</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+			  
+              {% else %}
+              <tr>
+                <td colspan="6">Chưa có nhóm con ưu tiên.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="toolbar" style="margin-top:10px;">
+          {% if can_manage_groups %}
+            <form method="post" action="/leave-schedule/groups/toggle-lock" onsubmit="return confirm('{% if p.is_active %}Khóa tạm thời cơ chế này?{% else %}Mở khóa lại cơ chế này?{% endif %}');">
+              <input type="hidden" name="group_id" value="{{ p.id }}">
+              <input type="hidden" name="block_tab" value="{{ block_tab }}">
+              <input type="hidden" name="action" value="{% if p.is_active %}lock{% else %}unlock{% endif %}">
+              {% if p.is_active %}
+                <button type="submit" class="btn btn-warning">Khóa nhóm cha</button>
+              {% else %}
+                <button type="submit" class="btn btn-success">Mở khóa nhóm cha</button>
+              {% endif %}
+            </form>
+
+            <form method="post" action="/leave-schedule/groups/delete" onsubmit="return confirm('Xóa hẳn nhóm cha và toàn bộ nhóm con?');">
+              <input type="hidden" name="group_id" value="{{ p.id }}">
+              <input type="hidden" name="block_tab" value="{{ block_tab }}">
+              <button type="submit" class="btn btn-danger">Xóa nhóm cha</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="card" style="margin-top:14px;">
+    <h3 class="section-title">Danh sách nhóm đã thành lập</h3>
+
+    {% if groups_data %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width:260px;">Tên nhóm</th>
+              <th style="width:140px;">Hạn mức</th>
+              <th>Thành viên hiện có</th>
+              <th style="width:320px;">Thêm thành viên</th>
+			  <th style="width:160px;">Khóa/Xóa nhóm</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for g in groups_data %}
+              <tr>
+                <td>
+                  <strong>{{ g.group_name }}</strong><br>
+                  <span class="muted-note">Loại: {{ g.group_type }}</span><br>
+                  {% if g.is_active %}
+                    <span class="tag-status tag-approved">Đang hiệu lực</span>
+                  {% else %}
+                    <span class="tag-status tag-cancelled">Đang khóa</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {{ g.display_limit_label or '-' }}
+                  {% if g.role_constraint_label %}
+                    <br><span class="muted-note">{{ g.role_constraint_label }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if g.members %}
+                    <ul class="info-list" style="margin:0;">
+                      {% for m in g.members %}
+                        <li style="margin-bottom:8px;">
+                          {{ m.user_name }}
+                          {% if can_manage_groups %}
+                            <form method="post" action="/leave-schedule/groups/remove-member" style="display:inline-block;margin-left:8px;" onsubmit="return confirm('Gỡ người dùng này khỏi nhóm?');">
+                              <input type="hidden" name="member_id" value="{{ m.id }}">
+                              <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                              <button type="submit" class="btn btn-danger" style="padding:4px 10px;">Gỡ</button>
+                            </form>
+                          {% endif %}
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <span class="muted-note">Chưa có thành viên.</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if can_manage_groups %}
+                    <form method="post" action="/leave-schedule/groups/add-member">
+                      <input type="hidden" name="group_id" value="{{ g.id }}">
+                      <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                      <div class="field" style="margin-bottom:8px;">
+                        <select name="user_id" required>
+                          <option value="">-- Chọn người dùng --</option>
+                          {% for u in g.assignable_users %}
+                            <option value="{{ u.id }}">{{ u.name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <button type="submit" class="btn btn-secondary">Thêm vào nhóm</button>
+                    </form>
+                  {% else %}
+                    <span class="muted-note">Không có quyền cập nhật.</span>
+                  {% endif %}
+                </td>
+				<td>
+                  {% if can_manage_groups %}
+                    <div class="toolbar" style="margin:0;flex-direction:column;align-items:flex-start;">
+                      <form method="post" action="/leave-schedule/groups/toggle-lock" onsubmit="return confirm('{% if g.is_active %}Khóa tạm thời nhóm này?{% else %}Mở khóa nhóm này?{% endif %}');">
+                        <input type="hidden" name="group_id" value="{{ g.id }}">
+                        <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                        <input type="hidden" name="action" value="{% if g.is_active %}lock{% else %}unlock{% endif %}">
+                        {% if g.is_active %}
+                          <button type="submit" class="btn btn-warning">Khóa</button>
+                        {% else %}
+                          <button type="submit" class="btn btn-success">Mở khóa</button>
+                        {% endif %}
+                      </form>
+
+                      <form method="post" action="/leave-schedule/groups/delete" onsubmit="return confirm('Xóa hẳn nhóm này? Thao tác này không hoàn tác.');">
+                        <input type="hidden" name="group_id" value="{{ g.id }}">
+                        <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                        <button type="submit" class="btn btn-danger">Xóa</button>
+                      </form>
+                    </div>
+                  {% else %}
+                    <span class="muted-note">Không có quyền.</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="placeholder-box">
+        Chưa có nhóm nào trong phạm vi hiện hành.
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <h3 class="section-title">Quy tắc áp dụng</h3>
+    {% if block_tab == 'CHUYEN_MON' %}
+      <ul class="info-list">
+        <li>Nhóm Quản lý khoa chỉ gồm các vị trí: Trưởng khoa, Phó khoa, Điều dưỡng trưởng, Kỹ thuật viên trưởng.</li>
+        <li>Nhóm Quản lý đơn vị thuộc khoa chỉ gồm các vị trí: Trưởng đơn vị, Phó đơn vị, Điều dưỡng trưởng đơn vị, Kỹ thuật viên trưởng đơn vị.</li>
+		<li>Nhóm luân phiên hoạt động theo tua tuần tự của danh sách thành viên hiện có; mỗi ngày đến lượt 1 người nghỉ theo vòng quay.</li>
+        <li>Khi gỡ 1 người khỏi nhóm luân phiên, người kế tiếp sẽ tự động thay thế vị trí trong tua nghỉ.</li>
+        <li>Khi thêm người mới vào nhóm luân phiên, người có thẩm quyền phải tự sắp lại nếu muốn đổi tua.</li>
+        <li>Các nhóm còn lại có thể thêm user thuộc phạm vi khoa/đơn vị hiện hành, bao gồm cả các vị trí chuyên môn thường như Bác sĩ, Dược sĩ, Điều dưỡng, Kỹ thuật viên, Hộ lý... nhưng không được trùng người giữa các nhóm.</li>
+        <li>Mỗi user chỉ được thuộc 1 nhóm trong cùng phạm vi khối chuyên môn.</li>
+      </ul>
+    {% else %}
+      <ul class="info-list">
+        <li>Nhóm Quản lý Phòng chỉ gồm các vị trí: Trưởng phòng, Phó phòng.</li>
+        <li>Nhóm Quản lý Tổ chỉ gồm các vị trí: Tổ trưởng, Tổ phó.</li>
+		<li>Nhóm nghỉ luân phiên hoạt động theo tua tuần tự của danh sách thành viên hiện có; mỗi ngày đến lượt 1 người nghỉ theo vòng quay.</li>
+        <li>Khi gỡ 1 người khỏi nhóm luân phiên, người kế tiếp sẽ tự động thay thế vị trí trong tua nghỉ.</li>
+        <li>Khi thêm người mới vào nhóm luân phiên, người có thẩm quyền phải tự sắp lại nếu muốn đổi tua.</li>
+        <li>Các nhóm còn lại có thể thêm user thuộc phạm vi phòng/tổ hiện hành nhưng không được trùng người giữa các nhóm.</li>
+        <li>Mỗi user chỉ được thuộc 1 nhóm trong cùng phạm vi khối hành chính.</li>
+      </ul>
+    {% endif %}
+  </div>
+
+{% elif sub_tab == 'leave_notice' %}
+  <div class="card">
+    <h2 class="section-title">Thông báo lịch nghỉ</h2>
+    <p class="section-subtitle">
+      Chọn tháng để xem thông báo, tránh dồn toàn bộ dữ liệu vào một bảng gây rối giao diện.
+    </p>
+
+    <form method="get" action="/leave-schedule" class="month-picker-row">
+      <input type="hidden" name="block_tab" value="{{ block_tab }}">
+      <input type="hidden" name="sub_tab" value="leave_notice">
+      <div class="field" style="max-width:220px;">
+        <label for="leave_notice_month">Chọn tháng thông báo</label>
+        <input
+          type="month"
+          id="leave_notice_month"
+          name="month"
+          value="{{ current_month }}"
+          onchange="this.form.submit()"
+        >
+      </div>
+    </form>
+
+    {% if leave_notices %}
+      <div class="notice-list">
+        {% for item in leave_notices %}
+          <div class="notice-card {% if not item.is_read %}is-unread{% endif %}">
+            <div class="notice-card-head">
+              <div>
+                <h3 class="notice-card-title">{{ item.title }}</h3>
+              </div>
+              <div class="notice-card-time">{{ item.created_at }}</div>
+            </div>
+
+            <div class="notice-card-message">{{ item.message or '-' }}</div>
+
+            <div class="notice-card-actions">
+              <div>
+                {% if item.is_read %}
+                  <span class="tag-status tag-approved">Đã đọc</span>
+                {% else %}
+                  <span class="tag-status tag-pending">Chưa đọc</span>
+                {% endif %}
+              </div>
+
+              <div>
+                {% if not item.is_read %}
+                  <form method="post" action="/leave-schedule/notice/mark-read" style="margin:0;">
+                    <input type="hidden" name="notice_id" value="{{ item.id }}">
+                    <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                    <input type="hidden" name="return_sub_tab" value="leave_notice">
+                    <input type="hidden" name="return_month" value="{{ current_month }}">
+                    <button type="submit" class="action-btn btn-secondary">Đánh dấu đã đọc</button>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="placeholder-box">
+        Hiện chưa có thông báo lịch nghỉ nào trong tháng <strong>{{ current_month }}</strong>.
+      </div>
+    {% endif %}
+  </div>
+
+{% elif sub_tab == 'view_calendar' %}
+  <div class="card">
+    <h2 class="section-title">Xem lịch nghỉ-trực</h2>
+    <p class="section-subtitle">
+      Lịch nghỉ, trực tháng tổng hợp theo nhân sự trong phạm vi <strong>{{ scope_display }}</strong>.
+      Ký hiệu nghỉ hiển thị trực tiếp trên ô ngày: <strong>P, F, NL, CT, ĐB, H</strong>. Ô trực hiển thị <strong>TR</strong>.
+    </p>
+
+    <form method="get" action="/leave-schedule" class="toolbar">
+      <input type="hidden" name="block_tab" value="{{ block_tab }}">
+      <input type="hidden" name="sub_tab" value="view_calendar">
+
+      <div class="field" style="max-width:160px; margin-bottom:0;">
+        <label for="calendar_year">Năm</label>
+        <select id="calendar_year" name="year" onchange="(function(sel){var monthSel=document.getElementById('calendar_month_only'); document.getElementById('calendar_month_hidden').value = sel.value + '-' + monthSel.value; sel.form.submit();})(this);">
+          {% for y in view_calendar_context.year_options %}
+            <option value="{{ y }}" {% if view_calendar_context.target_year == (y|string) %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field" style="max-width:160px; margin-bottom:0;">
+        <label for="calendar_month_only">Tháng</label>
+        <select id="calendar_month_only" name="month_only" onchange="(function(sel){var yearSel=document.getElementById('calendar_year'); document.getElementById('calendar_month_hidden').value = yearSel.value + '-' + sel.value; sel.form.submit();})(this);">
+          {% for m in view_calendar_context.month_options %}
+            <option value="{{ m.value }}" {% if view_calendar_context.target_month_only == m.value %}selected{% endif %}>{{ m.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <input type="hidden" id="calendar_month_hidden" name="month" value="{{ view_calendar_context.target_month }}">
+
+      <div class="field" style="max-width:180px; margin-bottom:0;">
+        <label for="view_mode">Chế độ xem</label>
+        <select id="view_mode" name="view_mode" onchange="this.form.submit()">
+          <option value="combined" {% if view_calendar_context.view_mode == 'combined' %}selected{% endif %}>Nghỉ - Trực</option>
+          <option value="leave" {% if view_calendar_context.view_mode == 'leave' %}selected{% endif %}>Lịch nghỉ</option>
+          <option value="roster" {% if view_calendar_context.view_mode == 'roster' %}selected{% endif %}>Lịch trực</option>
+        </select>
+      </div>
+
+      <div class="field" style="margin-bottom:0;">
+        <label>&nbsp;</label>
+        <a
+          href="/leave-schedule/export-calendar?block_tab={{ block_tab }}&month={{ view_calendar_context.target_month }}&view_mode={{ view_calendar_context.view_mode }}"
+          class="btn btn-primary"
+        >Xuất Excel</a>
+      </div>
+    </form>
+
+    <div class="roster-legend">
+      <span><i style="background:#fee2e2; border-color:#fecaca;"></i> P/F</span>
+      <span><i style="background:#fed7aa; border-color:#fdba74;"></i> NL</span>
+      <span><i style="background:#ede9fe; border-color:#c4b5fd;"></i> CT/H/ĐB</span>
+      <span><i style="background:#dbeafe; border-color:#93c5fd;"></i> Trực</span>
+      <span><i style="background:#ffedd5; border-color:#fdba74;"></i> NT</span>
+    </div>
+
+    {% if view_calendar_context.matrix_rows %}
+      <div class="calendar-matrix-wrap">
+        <table class="calendar-matrix">
+          <thead>
+            <tr>
+              <th class="sticky-left" rowspan="2">Nhân sự</th>
+              {% for d in view_calendar_context.day_defs %}
+                <th class="calendar-matrix-day">{{ d.day }}</th>
+              {% endfor %}
+            </tr>
+            <tr>
+              {% for d in view_calendar_context.day_defs %}
+                <th class="calendar-matrix-day">
+                  {% if d.weekday == 0 %}T2{% elif d.weekday == 1 %}T3{% elif d.weekday == 2 %}T4{% elif d.weekday == 3 %}T5{% elif d.weekday == 4 %}T6{% elif d.weekday == 5 %}T7{% else %}CN{% endif %}
+                </th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in view_calendar_context.matrix_rows %}
+              <tr>
+                <td class="sticky-left">
+                  <span class="calendar-matrix-user">{{ row.user_name }}</span>
+                  {% if row.role_label or row.unit_name %}
+                    <span class="calendar-matrix-meta">
+                      {{ row.role_label }}{% if row.role_label and row.unit_name %} - {% endif %}{{ row.unit_name }}
+                    </span>
+                  {% endif %}
+                </td>
+                {% for cell in row.cells %}
+                  <td
+                    class="calendar-matrix-day"
+                    title="{{ cell.title }}"
+                    style="{% if cell.bg_color %}background:{{ cell.bg_color }};{% endif %}{% if cell.text_color %}color:{{ cell.text_color }};{% endif %}"
+                  >
+                    {% if view_calendar_context.view_mode in ['combined', 'leave'] and cell.leave_symbol %}
+                      {{ cell.leave_symbol }}
+                    {% elif view_calendar_context.view_mode in ['combined', 'leave'] and cell.has_post_roster_rest %}
+                      {{ cell.post_roster_rest_symbol }}
+                    {% elif view_calendar_context.view_mode in ['combined', 'roster'] and cell.has_roster %}
+                      {{ cell.roster_symbol }}
+                    {% endif %}
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="placeholder-box">
+        Chưa có dữ liệu nghỉ hoặc trực trong tháng <strong>{{ view_calendar_context.target_month }}</strong>.
+      </div>
+    {% endif %}
+  </div>
+  
+{% elif sub_tab == 'roster_notice' %}
+  <div class="card">
+    <h2 class="section-title">Thông báo lịch trực</h2>
+    <p class="section-subtitle">
+      Tab này chỉ hiển thị <strong>thông báo lịch trực của chính user đang đăng nhập</strong>.
+    </p>
+
+    <form method="get" action="/leave-schedule" class="month-picker-row">
+      <input type="hidden" name="block_tab" value="{{ block_tab }}">
+      <input type="hidden" name="sub_tab" value="roster_notice">
+
+      <div class="field" style="max-width:220px;">
+        <label for="roster_notice_month">Tháng</label>
+        <input type="month" id="roster_notice_month" name="month" value="{{ current_month }}" onchange="this.form.submit()">
+      </div>
+
+      <div class="field" style="max-width:180px;">
+        <label for="week_no">Tuần</label>
+        <select id="week_no" name="week" onchange="this.form.submit()">
+          <option value="">Tất cả</option>
+          <option value="1" {% if week_no == '1' %}selected{% endif %}>Tuần 1</option>
+          <option value="2" {% if week_no == '2' %}selected{% endif %}>Tuần 2</option>
+          <option value="3" {% if week_no == '3' %}selected{% endif %}>Tuần 3</option>
+          <option value="4" {% if week_no == '4' %}selected{% endif %}>Tuần 4</option>
+          <option value="5" {% if week_no == '5' %}selected{% endif %}>Tuần 5</option>
+        </select>
+      </div>
+    </form>
+
+    {% if roster_notice_context["items"] %}
+      <div class="notice-list">
+        {% for item in roster_notice_context["items"] %}
+          <div class="notice-card {% if not item.is_read %}is-unread{% endif %}">
+            <div class="notice-card-head">
+              <div>
+                <h3 class="notice-card-title">{{ item.title }}</h3>
+              </div>
+              <div class="notice-card-time">{{ item.created_at }}</div>
+            </div>
+
+            <div class="notice-card-message">{{ item.message or '-' }}</div>
+
+            <div class="notice-card-actions">
+              <div>
+                {% if item.is_read %}
+                  <span class="tag-status tag-approved">Đã đọc</span>
+                {% else %}
+                  <span class="tag-status tag-pending">Chưa đọc</span>
+                {% endif %}
+              </div>
+
+              <div>
+                {% if not item.is_read %}
+                  <form method="post" action="/leave-schedule/notice/mark-read" style="margin:0;">
+                    <input type="hidden" name="notice_id" value="{{ item.id }}">
+                    <input type="hidden" name="block_tab" value="{{ block_tab }}">
+                    <input type="hidden" name="return_sub_tab" value="roster_notice">
+                    <input type="hidden" name="return_month" value="{{ current_month }}">
+                    <input type="hidden" name="return_week" value="{{ week_no }}">
+                    <button type="submit" class="action-btn btn-secondary">Đánh dấu đã đọc</button>
+                  </form>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="placeholder-box">
+        Hiện chưa có thông báo lịch trực / làm việc nào của anh/chị trong bộ lọc đang chọn.
+      </div>
+    {% endif %}
+  </div>
+
+{% else %}
+  <div class="card">
+    <div class="placeholder-box">Tab không hợp lệ.</div>
+  </div>
+{% endif %}
+<script>
+(function () {
+  const leaveType = document.getElementById('leave_type');
+  const selectedDatesInput = document.getElementById('selected_dates');
+  const selectedDaysText = document.getElementById('selected_days_text');
+  const calendarHelp = document.getElementById('calendar_help');
+  const cells = Array.from(document.querySelectorAll('.calendar-cell[data-date]'));
+  if (!leaveType || !selectedDatesInput || !selectedDaysText || !cells.length) return;
+
+  const bypassTypes = new Set(['DB', 'CT', 'H']);
+  const selected = new Set();
+
+  function isBypassType() {
+    return bypassTypes.has(String(leaveType.value || '').toUpperCase());
+  }
+
+  function hideHelp() {
+    if (calendarHelp) {
+      calendarHelp.style.display = 'none';
+    }
+  }
+
+  function showLockedHelp() {
+    if (calendarHelp) {
+      calendarHelp.style.display = 'block';
+    }
+  }
+
+  function refreshCalendarState() {
+    const bypass = isBypassType();
+
+    cells.forEach(cell => {
+      const lockedByGroup = cell.dataset.lockedGroup === '1';
+      if (lockedByGroup && !bypass) {
+        cell.classList.add('is-locked');
+      } else if (lockedByGroup && bypass) {
+        cell.classList.remove('is-locked');
+      }
+    });
+
+    const arr = Array.from(selected).sort();
+    selectedDatesInput.value = arr.join(',');
+    selectedDaysText.textContent = arr.length ? arr.join(', ') : 'Chưa chọn ngày nào';
+  }
+
+  cells.forEach(cell => {
+    cell.addEventListener('click', function () {
+      const bypass = isBypassType();
+      const lockedByGroup = cell.dataset.lockedGroup === '1';
+      const date = cell.dataset.date;
+
+      if (lockedByGroup && !bypass) {
+        showLockedHelp();
+        return;
+      }
+
+      hideHelp();
+
+      if (selected.has(date)) {
+        selected.delete(date);
+        cell.classList.remove('is-selected');
+      } else {
+        selected.add(date);
+        cell.classList.add('is-selected');
+      }
+      refreshCalendarState();
+    });
+  });
+
+  leaveType.addEventListener('change', function () {
+    hideHelp();
+    refreshCalendarState();
+  });
+
+  refreshCalendarState();
+})();
+
+  function validateLeaveSwapForm() {
+    const a = document.getElementById('request_a_id');
+    const b = document.getElementById('request_b_id');
+    if (!a || !b) return true;
+    if (!a.value || !b.value) {
+      alert('Anh/chị phải chọn đủ 2 phiếu nghỉ để hoán đổi.');
+      return false;
+    }
+    if (a.value === b.value) {
+      alert('Hai phiếu nghỉ dùng để hoán đổi phải là hai phiếu khác nhau.');
+      b.focus();
+      return false;
+    }
+    return true;
+  }
+
+  function initScheduleSummaryFilters() {
+    const table = document.getElementById('schedule_summary_table');
+    const groupTypeSelect = document.getElementById('schedule_group_type_filter');
+    const childGroupSelect = document.getElementById('schedule_child_group_filter');
+    if (!table || !groupTypeSelect || !childGroupSelect) return;
+
+    const rows = Array.from(table.querySelectorAll('tbody tr[data-filter-group-type]'));
+    if (!rows.length) return;
+
+    function uniqueOptions(items, valueKey, labelKey) {
+      const seen = new Set();
+      const out = [];
+      items.forEach(item => {
+        const value = (item.getAttribute(valueKey) || '').trim();
+        const label = (item.getAttribute(labelKey) || '').trim();
+        if (!value || seen.has(value)) return;
+        seen.add(value);
+        out.push({ value, label: label || value });
+      });
+      return out.sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+    }
+
+    function rebuildChildOptions() {
+      const selectedGroupType = groupTypeSelect.value || '';
+      childGroupSelect.innerHTML = '<option value="">Tất cả</option>';
+
+      const sourceRows = rows.filter(row => {
+        const rowType = row.dataset.filterGroupType || '';
+        if (!selectedGroupType) return true;
+        return rowType === selectedGroupType;
+      });
+
+      const childOptions = uniqueOptions(
+        sourceRows,
+        'data-filter-child-group',
+        'data-filter-child-group-label'
+      );
+
+      childOptions.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.value;
+        opt.textContent = item.label;
+        childGroupSelect.appendChild(opt);
+      });
+    }
+
+    function applyFilters() {
+      const selectedGroupType = groupTypeSelect.value || '';
+      const selectedChildGroup = childGroupSelect.value || '';
+
+      rows.forEach(row => {
+        const rowType = row.dataset.filterGroupType || '';
+        const rowChild = row.dataset.filterChildGroup || '';
+
+        const matchType = !selectedGroupType || rowType === selectedGroupType;
+        const matchChild = !selectedChildGroup || rowChild === selectedChildGroup;
+
+        row.style.display = (matchType && matchChild) ? '' : 'none';
+      });
+    }
+
+    const groupTypeOptions = uniqueOptions(
+      rows,
+      'data-filter-group-type',
+      'data-filter-group-type-label'
+    );
+
+    groupTypeOptions.forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item.value;
+      opt.textContent = item.label;
+      groupTypeSelect.appendChild(opt);
+    });
+
+    groupTypeSelect.addEventListener('change', function () {
+      rebuildChildOptions();
+      applyFilters();
+    });
+
+    childGroupSelect.addEventListener('change', function () {
+      applyFilters();
+    });
+
+    rebuildChildOptions();
+    applyFilters();
+  }
+
+  initScheduleSummaryFilters();
+
+  function getRosterForbiddenMap(userId) {
+    const allMaps = window.__rosterForbiddenByUser || {};
+    return allMaps[String(userId || '').trim()] || {};
+  }
+
+  function refreshRosterHiddenInputs(row) {
+    const userSelect = row.querySelector('.js-roster-user');
+    const hiddenBox = row.querySelector('.js-roster-hidden-dates');
+    const noteEl = row.querySelector('.js-roster-note');
+    const selectedCells = row.querySelectorAll('.roster-mini-cell.is-selected[data-date]');
+    if (!userSelect || !hiddenBox) return;
+
+    const userId = String(userSelect.value || '').trim();
+    const note = noteEl ? String(noteEl.value || '') : '';
+    hiddenBox.innerHTML = '';
+
+    if (!userId) return;
+
+    selectedCells.forEach(cell => {
+      const dateValue = String(cell.dataset.date || '').trim();
+      if (!dateValue) return;
+
+      const inputUser = document.createElement('input');
+      inputUser.type = 'hidden';
+      inputUser.name = 'selected_user_ids';
+      inputUser.value = userId;
+
+      const inputDate = document.createElement('input');
+      inputDate.type = 'hidden';
+      inputDate.name = 'selected_work_dates';
+      inputDate.value = dateValue;
+
+      const inputNote = document.createElement('input');
+      inputNote.type = 'hidden';
+      inputNote.name = 'notes';
+      inputNote.value = note;
+
+      hiddenBox.appendChild(inputUser);
+      hiddenBox.appendChild(inputDate);
+      hiddenBox.appendChild(inputNote);
+    });
+  }
+
+  function refreshRosterSelectedText(row) {
+    const textEl = row.querySelector('.js-roster-selected-text');
+    if (!textEl) return;
+
+    const selectedDates = Array.from(
+      row.querySelectorAll('.roster-mini-cell.is-selected[data-date]')
+    ).map(el => String(el.dataset.date || '').trim()).filter(Boolean).sort();
+
+    textEl.textContent = selectedDates.length ? selectedDates.join(', ') : 'Chưa chọn ngày nào';
+  }
+
+  function bindRosterCalendarForRow(sourceEl) {
+    const row = sourceEl ? sourceEl.closest('tr') : null;
+    if (!row) return;
+
+    const userSelect = row.querySelector('.js-roster-user');
+    const helpEl = row.querySelector('.roster-date-help');
+    if (!userSelect || !helpEl) return;
+
+    const userId = String(userSelect.value || '').trim();
+    const forbiddenMap = getRosterForbiddenMap(userId);
+
+    row.querySelectorAll('.roster-mini-cell[data-date]').forEach(cell => {
+      cell.classList.remove('is-danger', 'is-warning', 'is-selected');
+      const d = String(cell.dataset.date || '').trim();
+      const reason = forbiddenMap[d] || '';
+
+      if (reason) {
+        if (String(reason).toLowerCase().includes('trùng ngày nghỉ')) {
+          cell.classList.add('is-danger');
+        } else {
+          cell.classList.add('is-warning');
+        }
+      }
+    });
+
+    helpEl.style.display = userId ? 'block' : 'none';
+    helpEl.classList.remove('is-danger', 'is-warning');
+    helpEl.innerHTML = userId
+      ? 'Màu <strong>đỏ</strong>: ngày nghỉ đã duyệt. Màu <strong>cam</strong>: ngày liền trước ngày nghỉ. Các ngày này không được chọn.'
+      : 'Chọn nhân sự trước khi chọn ngày trực.';
+
+    refreshRosterSelectedText(row);
+    refreshRosterHiddenInputs(row);
+  }
+
+  function toggleRosterDay(cell) {
+    if (!cell || cell.classList.contains('is-empty')) return;
+
+    const row = cell.closest('tr');
+    if (!row) return;
+
+    const userSelect = row.querySelector('.js-roster-user');
+    const helpEl = row.querySelector('.roster-date-help');
+    const userId = userSelect ? String(userSelect.value || '').trim() : '';
+
+    if (!userId) {
+      if (helpEl) {
+        helpEl.style.display = 'block';
+        helpEl.classList.remove('is-danger');
+        helpEl.classList.add('is-warning');
+        helpEl.textContent = 'Phải chọn nhân sự trước khi chọn ngày trực.';
+      }
+      return;
+    }
+
+    if (cell.classList.contains('is-danger') || cell.classList.contains('is-warning')) {
+      if (helpEl) {
+        helpEl.style.display = 'block';
+        helpEl.classList.remove('is-danger', 'is-warning');
+        helpEl.classList.add(cell.classList.contains('is-danger') ? 'is-danger' : 'is-warning');
+        helpEl.textContent = cell.classList.contains('is-danger')
+          ? 'Ngày này trùng ngày nghỉ đã duyệt của chính nhân sự đang chọn.'
+          : 'Ngày này là ngày liền trước ngày nghỉ của chính nhân sự đang chọn.';
+      }
+      return;
+    }
+
+    cell.classList.toggle('is-selected');
+    refreshRosterSelectedText(row);
+    refreshRosterHiddenInputs(row);
+  }
+
+  function addRosterRow() {
+    const table = document.getElementById('roster_draft_table');
+    if (!table) return;
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+
+    const firstRow = tbody.querySelector('tr');
+    if (!firstRow) return;
+
+    const cloned = firstRow.cloneNode(true);
+
+    const selectEl = cloned.querySelector('.js-roster-user');
+    if (selectEl) selectEl.selectedIndex = 0;
+
+    const noteEl = cloned.querySelector('.js-roster-note');
+    if (noteEl) noteEl.value = '';
+
+    const helpEl = cloned.querySelector('.roster-date-help');
+    if (helpEl) {
+      helpEl.textContent = '';
+      helpEl.style.display = 'none';
+      helpEl.classList.remove('is-danger', 'is-warning');
+    }
+
+    const selectedText = cloned.querySelector('.js-roster-selected-text');
+    if (selectedText) selectedText.textContent = 'Chưa chọn ngày nào';
+
+    const hiddenBox = cloned.querySelector('.js-roster-hidden-dates');
+    if (hiddenBox) hiddenBox.innerHTML = '';
+
+    cloned.querySelectorAll('.roster-mini-cell[data-date]').forEach(cell => {
+      cell.classList.remove('is-danger', 'is-warning', 'is-selected');
+    });
+
+    tbody.appendChild(cloned);
+  }
+
+  function removeRosterRow(btn) {
+    const row = btn ? btn.closest('tr') : null;
+    const tbody = row ? row.parentElement : null;
+    if (!row || !tbody) return;
+    if (tbody.querySelectorAll('tr').length <= 1) {
+      alert('Phải giữ lại tối thiểu 1 dòng để nhập lịch trực.');
+      return;
+    }
+    row.remove();
+  }
+
+  document.querySelectorAll('#roster_draft_table tbody tr').forEach(function (row) {
+    const userSelect = row.querySelector('.js-roster-user');
+    if (userSelect) bindRosterCalendarForRow(userSelect);
+
+    const noteEl = row.querySelector('.js-roster-note');
+    if (noteEl) {
+      noteEl.addEventListener('input', function () {
+        refreshRosterHiddenInputs(row);
+      });
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,622 @@
+:root {
+  --blue: #1E40AF;          /* xanh dương */
+  --blue-strong: #1E3A8A;   /* xanh dương đậm */
+  --amber: #D97706;         /* vàng đậm cho link đăng ký */
+  --red: #DC2626;           /* đỏ cho tên ứng dụng */
+  --bg: #F4F6FA;
+  --text: #111827;
+  --muted: #6B7280;
+  --border: #E5E7EB;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
+
+/* ===== Header sau đăng nhập ===== */
+.header {
+  position: sticky; top:0; z-index:10;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 16px; background:#fff; border-bottom:1px solid var(--border);
+}
+.brand {
+  display:flex;
+  align-items:center;
+  gap:14px;
+  flex: 1 1 auto;       /* CHIẾM LINH HOẠT */
+  min-width: 0;
+}
+
+.logo { width:56px; height:56px; object-fit:contain; }
+
+.brand-text {
+  display:flex;
+  flex-direction:column;
+  line-height:1.1;
+  gap:4px;
+}
+
+.brand-line1 {
+  font-size: 36px;      /* GIẢM NHẸ → CÂN ĐỐI */
+  font-weight: 800;
+  color: var(--blue-strong);
+  white-space: nowrap;  /* GIỮ 1 DÒNG */
+}
+
+.brand-line2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--red);
+  white-space: nowrap;
+}
+
+.nav {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.nav a { margin-left:12px; text-decoration:none; color:#111827; font-weight:600; }
+.nav a:hover { color: var(--blue); }
+
+@media (max-width: 1200px) {.brand-line1{font-size:32px}.brand-line2{font-size:22px}}
+@media (max-width: 900px) {.header{flex-direction: column; align-items:flex-start; gap:8px}.brand{max-width:100%}}
+
+.container { max-width:1100px; margin:20px auto; padding:0 16px; }
+.card { background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); }
+.table { width:100%; border-collapse: collapse; margin-top:12px; }
+.table th, .table td { border:1px solid var(--border); padding:8px; font-size:14px; }
+
+.footer { text-align:center; padding:16px; color:var(--muted); font-style: italic; }
+
+/* ===== Trang Login / Register ===== */
+.login-page, .register-page {
+  min-height:100vh;
+  background: url("/static/images/login.jpg") no-repeat center center fixed;
+  background-size: cover; position: relative;
+}
+/* lớp phủ mờ */
+.login-page::after, .register-page::after {
+  content:""; position:absolute; inset:0; background: rgba(0,0,0,0.20);
+}
+/* banner chữ trên nền */
+.hero-banner {
+  position:absolute; top:28px; left:50%; transform:translateX(-50%);
+  z-index:2; text-align:center; text-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+.hero-banner .line1 {
+  font-size:28px; font-weight:900; color:#fff;
+  background: rgba(255,255,255,0.18); padding:6px 12px; border-radius:10px;
+  border:1px solid rgba(255,255,255,0.35);
+}
+
+.center-wrap { position:relative; z-index:1; width:420px; margin:0 auto; top:16vh; }
+.register-page .center-wrap { width:720px; }
+
+.panel {
+  background: rgba(255,255,255,0.12);
+  padding:20px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,0.28);
+  box-shadow:0 10px 24px rgba(0,0,0,0.16);
+  backdrop-filter: blur(1.5px);
+}
+
+.panel h1 { font-size:18px; color: var(--red); margin:6px 0 12px; text-align:center; } /* App: đỏ */
+.panel .brand-mini { text-align:center; color: var(--blue-strong); font-size:14px; margin-bottom:6px; font-weight:800; } /* BV: xanh đậm */
+.panel .logo { display:block; width:64px; height:64px; margin:0 auto 6px; object-fit:contain; }
+.panel label { display:block; font-weight:900; margin:8px 0 4px; color: #FFF7ED; }
+.panel input, .panel select {
+  width:100%;
+  padding:10px 12px;
+  border:1px solid rgba(255,255,255,0.65);
+  border-radius:8px;
+  background: rgba(255,255,255,0.55);
+  color:#1e3a8a;
+  font-size:16px;
+  font-weight:600;
+}
+
+.panel input::placeholder {
+  color: rgba(30,58,138,0.65);
+  font-size:15px;
+}
+.panel button:not(.eye-btn) {
+  margin-top:12px; width:100%; padding:10px 12px; border:0; border-radius:8px;
+  background:#4338CA; color:#fff; font-weight:700; cursor:pointer;
+}
+.panel .alert { background:#FEE2E2; color:#991B1B; padding:8px; border-radius:8px; margin:8px 0; }
+.panel .alert.success { background:#DCFCE7; color:#065F46; }
+.panel .links { text-align:center; margin-top:8px; }
+.panel .links a { text-decoration:none; font-weight:800; }
+.panel .links a .register-prefix { color: var(--blue-strong); }
+.panel .links a .register-highlight { color: #8b0000; font-weight:900; }
+.panel .links a:hover { text-decoration:underline; }
+
+/* nhóm input có icon "con mắt" — KHÔNG che ô nhập */
+.input-group { position:relative; }
+.input-group input { padding-right: 44px; }  /* chừa chỗ cho icon bên phải */
+.panel .eye-btn {         /* ghi đè style của button thường */
+  position:absolute; right:8px; top:50%; transform:translateY(-50%);
+  width:28px !important; height:28px; padding:0; margin:0;
+  display:flex; align-items:center; justify-content:center;
+  background:#F3F4F6 !important; border:1px solid #D1D5DB; border-radius:6px;
+  cursor:pointer;
+}
+.panel .eye-btn:hover { background:#E5E7EB !important; }
+.eye-icon { width:18px; height:18px; display:block; }
+
+/* ghi công ở trang login */
+.sign-credit {
+  margin-top:10px;
+  text-align:center;
+  color:#e5e7eb;
+  font-style:italic;
+  white-space: nowrap;
+  font-size: 16px;
+}
+
+/* ====== BỔ SUNG CHO TRANG /tasks ====== */
+.tasks-page .task-form { margin-top:12px; }
+.tasks-page .form-grid {
+  display:grid;
+  grid-template-columns: 1fr;
+  gap:10px;
+}
+@media (min-width: 900px) {
+  .tasks-page .form-grid { grid-template-columns: 1fr 1fr; }
+}
+.tasks-page .form-field label { display:block; font-weight:600; margin-bottom:4px; }
+.tasks-page .field-title {
+  max-width: 460px;   /* THU HẸP ô TIÊU ĐỀ */
+  width:100%;
+  padding:8px 10px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:#fff;
+}
+.tasks-page .field-content {
+  width:100%;
+  min-height: 260px;  /* CAO */
+  height: 32vh;       /* co giãn theo chiều cao màn hình */
+  padding:10px 12px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  resize: vertical;   /* cho phép kéo cao hơn nếu cần */
+  background:#fff;
+}
+.tasks-page .form-field--full { grid-column: 1 / -1; }  /* textarea chiếm full hàng */
+.tasks-page select, .tasks-page input[type="date"] {
+  width:100%;
+  padding:8px 10px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:#fff;
+}
+.tasks-page .form-actions { grid-column: 1 / -1; }
+.btn.btn-primary {
+  padding:8px 14px; border-radius:8px; background:#4338CA; color:#fff; border:0; cursor:pointer; font-weight:700;
+}
+.btn.btn-primary:hover { background:#3730A3; }
+
+/* =========================================================
+   UI MEDICAL PRO - BỔ SUNG TỔNG THỂ
+   Dán ở CUỐI file styles.css
+   ========================================================= */
+
+:root {
+  --medical-primary: #0F4C81;      /* xanh y tế chủ đạo */
+  --medical-primary-2: #1D6FA5;    /* xanh trung gian */
+  --medical-accent: #0E7490;       /* xanh cyan y tế */
+  --medical-soft: #EAF4FB;         /* nền xanh nhạt */
+  --medical-soft-2: #F4FAFD;       /* nền phụ */
+  --medical-success: #15803D;
+  --medical-warning: #B45309;
+  --medical-danger: #B91C1C;
+  --medical-text: #0F172A;
+  --medical-muted: #475569;
+  --medical-border: #D8E4EE;
+  --medical-shadow: 0 10px 30px rgba(15, 76, 129, 0.08);
+  --medical-shadow-soft: 0 4px 14px rgba(15, 76, 129, 0.06);
+  --medical-radius: 14px;
+}
+
+/* ----- Khung tổng thể ----- */
+body.app-shell {
+  background:
+    linear-gradient(180deg, #F5FAFD 0%, #EEF5FA 100%);
+  color: var(--medical-text);
+}
+
+/* ----- Header / brand ----- */
+body.app-shell .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #F6FBFF 100%);
+  border-bottom: 1px solid var(--medical-border);
+  box-shadow: 0 4px 18px rgba(15, 76, 129, 0.05);
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+body.app-shell .brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+body.app-shell .brand-text {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+body.app-shell .logo {
+  border-radius: 14px;
+  background: #FFFFFF;
+  box-shadow: 0 6px 18px rgba(15, 76, 129, 0.10);
+  padding: 4px;
+  flex: 0 0 auto;
+}
+
+body.app-shell .brand-line1 {
+  color: var(--medical-primary);
+  letter-spacing: 0;
+  white-space: nowrap;
+  line-height: 1.02;
+  font-size: 30px;
+}
+
+body.app-shell .brand-line2 {
+  color: #C62828;
+  letter-spacing: 0;
+  white-space: nowrap;
+  line-height: 1.05;
+  font-size: 18px;
+}
+
+/* ----- Nav chuyên nghiệp dạng pill ----- */
+body.app-shell .nav {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  flex: 1 1 auto;
+  max-width: none;
+}
+
+body.app-shell .nav a {
+  margin-left: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid #D7E6F1;
+  border-radius: 999px;
+  background: #F2F8FC;
+  color: #A16207;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.18s ease;
+}
+
+body.app-shell .nav a:hover {
+  color: var(--medical-primary);
+  background: #F2F8FC;
+  border-color: #D7E6F1;
+  transform: translateY(-1px);
+}
+
+body.app-shell .nav a.is-active,
+body.app-shell .nav a[aria-current="page"] {
+  color: #FFFFFF;
+  background: linear-gradient(135deg, var(--medical-primary) 0%, var(--medical-primary-2) 100%);
+  border-color: transparent;
+  box-shadow: 0 8px 18px rgba(15, 76, 129, 0.18);
+}
+
+/* ----- Vùng nội dung ----- */
+body.app-shell .container {
+  max-width: 1320px;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+/* ----- Card / khối chức năng ----- */
+body.app-shell .card,
+body.app-shell .panel-card,
+body.app-shell .section-card,
+body.app-shell .content-card {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FCFEFF 100%);
+  border: 1px solid var(--medical-border);
+  border-radius: var(--medical-radius);
+  box-shadow: var(--medical-shadow-soft);
+}
+
+body.app-shell .card {
+  padding: 18px;
+}
+
+body.app-shell h1,
+body.app-shell h2,
+body.app-shell h3 {
+  color: var(--medical-primary);
+  letter-spacing: 0.1px;
+}
+
+body.app-shell h2 {
+  margin-top: 0;
+  margin-bottom: 14px;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+body.app-shell h3 {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* ----- Thanh tiêu đề / toolbar / bộ lọc ----- */
+body.app-shell .page-title,
+body.app-shell .section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #E7F0F7;
+  color: var(--medical-primary);
+  font-weight: 800;
+}
+
+body.app-shell .toolbar,
+body.app-shell .filter-bar,
+body.app-shell .action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid #E0ECF4;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #F7FBFE 0%, #F1F7FB 100%);
+}
+
+/* ----- Form controls đồng bộ ----- */
+body.app-shell main.container input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+body.app-shell main.container select,
+body.app-shell main.container textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #C9DAE7;
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: var(--medical-text);
+  font-size: 14px;
+  line-height: 1.4;
+  outline: none;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+body.app-shell main.container textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+body.app-shell main.container input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+body.app-shell main.container select:focus,
+body.app-shell main.container textarea:focus {
+  border-color: var(--medical-primary-2);
+  background: #FFFFFF;
+  box-shadow: 0 0 0 4px rgba(29, 111, 165, 0.12);
+}
+
+body.app-shell main.container label {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: #1E293B;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* ----- Nút bấm ----- */
+body.app-shell main.container button,
+body.app-shell main.container .btn,
+body.app-shell main.container a.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, var(--medical-primary) 0%, var(--medical-primary-2) 100%);
+  color: #FFFFFF;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 8px 18px rgba(15, 76, 129, 0.14);
+}
+
+body.app-shell main.container button:hover,
+body.app-shell main.container .btn:hover,
+body.app-shell main.container a.btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+}
+
+body.app-shell main.container .btn-secondary,
+body.app-shell main.container .btn-outline-secondary,
+body.app-shell main.container .btn-light {
+  background: #FFFFFF;
+  color: var(--medical-primary);
+  border-color: #C9DAE7;
+  box-shadow: none;
+}
+
+body.app-shell main.container .btn-danger,
+body.app-shell main.container .btn-outline-danger {
+  background: linear-gradient(135deg, #B91C1C 0%, #DC2626 100%);
+  color: #FFFFFF;
+  border-color: transparent;
+}
+
+/* ----- Bảng dữ liệu ----- */
+body.app-shell .table,
+body.app-shell table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 12px;
+  background: #FFFFFF;
+  border: 1px solid #DBE7F0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--medical-shadow-soft);
+}
+
+body.app-shell .table th,
+body.app-shell table th {
+  padding: 11px 12px;
+  border-bottom: 1px solid #D9E6EF;
+  background: linear-gradient(180deg, #EDF6FB 0%, #E4F0F8 100%);
+  color: var(--medical-primary);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: none;
+  vertical-align: middle;
+}
+
+body.app-shell .table td,
+body.app-shell table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #EAF1F6;
+  color: #0F172A;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+body.app-shell .table tbody tr:hover,
+body.app-shell table tbody tr:hover {
+  background: #F7FBFE;
+}
+
+body.app-shell .table tbody tr:last-child td,
+body.app-shell table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ----- Badge / trạng thái ----- */
+body.app-shell .badge,
+body.app-shell .status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid transparent;
+}
+
+body.app-shell .badge-success,
+body.app-shell .status-success {
+  color: #166534;
+  background: #DCFCE7;
+  border-color: #BBF7D0;
+}
+
+body.app-shell .badge-warning,
+body.app-shell .status-warning {
+  color: #92400E;
+  background: #FEF3C7;
+  border-color: #FDE68A;
+}
+
+body.app-shell .badge-danger,
+body.app-shell .status-danger {
+  color: #991B1B;
+  background: #FEE2E2;
+  border-color: #FECACA;
+}
+
+body.app-shell .badge-info,
+body.app-shell .status-info {
+  color: #0C4A6E;
+  background: #E0F2FE;
+  border-color: #BAE6FD;
+}
+
+/* ----- Link nội dung ----- */
+body.app-shell main.container a:not(.btn) {
+  color: var(--medical-primary);
+  font-weight: 700;
+}
+
+body.app-shell main.container a:not(.btn):hover {
+  color: var(--medical-accent);
+}
+
+/* ----- Footer ----- */
+body.app-shell .footer {
+  margin-top: 20px;
+  padding-top: 18px;
+  padding-bottom: 18px;
+  color: #5B6B7C;
+  border-top: 1px solid #DFEAF2;
+  background: transparent;
+}
+
+/* ----- Responsive ----- */
+@media (max-width: 1280px) {
+  body.app-shell .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  body.app-shell .nav {
+    justify-content: flex-start;
+    margin-top: 6px;
+  }
+}
+
+@media (max-width: 1024px) {
+  body.app-shell .container {
+    max-width: 100%;
+  }
+
+  body.app-shell .brand-line1,
+  body.app-shell .brand-line2 {
+    white-space: normal;
+  }
+
+  body.app-shell .nav {
+    gap: 6px;
+    justify-content: flex-start;
+  }
+
+  body.app-shell .nav a {
+    min-height: 36px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  body.app-shell h2 {
+    font-size: 21px;
+  }
+}

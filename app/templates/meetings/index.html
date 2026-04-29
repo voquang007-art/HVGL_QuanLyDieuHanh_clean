@@ -1,0 +1,2548 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="/static/chat/chat.css">
+<style>
+.meeting-layout{display:grid;grid-template-columns:340px 1fr;gap:16px}
+.meeting-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;box-shadow:0 10px 24px rgba(15,23,42,.04)}
+.meeting-list{max-height:360px;overflow:auto;display:grid;gap:10px}
+.meeting-item{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:12px;border:1px solid #dbe4ee;border-radius:12px;color:#0f172a;background:#fff}
+.meeting-item-link{display:block;flex:1 1 auto;text-decoration:none;color:#0f172a}
+.meeting-item-actions{flex:0 0 auto;display:flex;align-items:center}
+.meeting-btn.danger-outline{background:#fff;color:#b91c1c;border-color:#fecaca}
+.meeting-btn.danger-outline:hover{background:#fef2f2}
+.meeting-tree{border:1px solid #0f4c81;border-radius:12px;background:#fff;overflow:hidden}
+.meeting-tree-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;cursor:pointer;font-weight:700;list-style:none;background:#0f4c81;color:#ffffff}
+.meeting-tree-title{display:inline-flex;align-items:center;font-weight:700;color:#ffffff}
+.meeting-tree-count{display:inline-flex;align-items:center;justify-content:center;min-width:92px;height:30px;padding:0 12px;border-radius:999px;background:#facc15;color:#111827;font-size:13px;font-weight:800;line-height:1;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.meeting-tree-summary::-webkit-details-marker{display:none}
+.meeting-tree-body{padding:10px;border-top:1px solid #eef2f7}
+.meeting-year-group,.meeting-month-group{border:1px solid #e2e8f0;border-radius:10px;background:#fff}
+.meeting-year-group + .meeting-year-group,.meeting-month-group + .meeting-month-group{margin-top:10px}
+.meeting-year-summary,.meeting-month-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;cursor:pointer;font-weight:700;list-style:none}
+.meeting-year-summary::-webkit-details-marker,.meeting-month-summary::-webkit-details-marker{display:none}
+.meeting-year-body,.meeting-month-body{padding:10px;border-top:1px solid #eef2f7}
+.meeting-month-count{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 8px;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:700}
+.meeting-empty{padding:12px;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc}
+.meeting-item.is-active{border-color:#0f766e;background:#f0fdfa}
+.meeting-meta{font-size:12px;color:#64748b;margin-top:6px}
+.meeting-pill{display:inline-flex;padding:4px 10px;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:700}
+.meeting-pill.live{background:#dcfce7;color:#166534}
+.meeting-pill.ended{background:#e2e8f0;color:#334155}
+.meeting-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.meeting-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+.meeting-box{border:1px solid #e2e8f0;border-radius:12px;padding:14px;background:#fff}
+.meeting-box h4{margin:0 0 10px}
+.meeting-field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.meeting-field input,.meeting-field select,.meeting-field textarea{border:1px solid #cbd5e1;border-radius:10px;padding:10px 12px;font:inherit}
+.meeting-field textarea{min-height:72px}
+.meeting-actions{display:flex;gap:8px;flex-wrap:wrap}
+.meeting-btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid #0f766e;background:#0f766e;color:#fff;border-radius:10px;padding:9px 14px;text-decoration:none;cursor:pointer}
+.meeting-btn.secondary{background:#fff;color:#0f172a;border-color:#cbd5e1}
+.meeting-btn.warn{background:#b91c1c;border-color:#b91c1c}
+.meeting-attendance-row,.meeting-speaker-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #eef2f7}
+.meeting-attendance-row:last-child,.meeting-speaker-row:last-child{border-bottom:none}
+.meeting-chat-list{max-height:360px;overflow:auto;border:1px solid #e2e8f0;border-radius:12px;padding:12px;background:#f8fafc;display:grid;gap:10px}
+.meeting-chat-item{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px}
+.meeting-chat-item.mine{border-color:#bfdbfe;background:#eff6ff}
+.meeting-chat-meta{font-size:12px;color:#64748b;margin-bottom:6px}
+.meeting-attachments a{display:inline-block;margin-right:8px;font-size:13px}
+.meeting-doc-list{display:grid;gap:10px}
+.meeting-doc-item{border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;background:#f8fafc}
+.meeting-doc-title{font-weight:700;color:#0f172a}
+.meeting-doc-meta{font-size:12px;color:#64748b;margin-top:4px}
+.meeting-doc-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.meeting-btn[disabled]{opacity:.55;cursor:not-allowed}
+.meeting-create-locked{padding:12px;border:1px dashed #cbd5e1;border-radius:12px;background:#f8fafc;color:#475569}
+.meeting-note{font-size:12px;color:#64748b}
+.meeting-collapsible-toggle{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  border:1px solid #0f4c81;
+  border-radius:10px;
+  padding:10px 12px;
+  background:#0f4c81;
+  color:#ffffff;
+  font:inherit;
+  font-weight:700;
+  cursor:pointer;
+}
+.meeting-collapsible-toggle:hover{background:#0c416e}
+.meeting-collapsible-title{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.meeting-collapsible-summary{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.meeting-summary-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+  color:#fff;
+  line-height:1;
+}
+.meeting-summary-pill.pending{background:#475569}
+.meeting-summary-pill.absent{background:#b91c1c}
+.meeting-summary-pill.checkedin{background:#15803d}
+.meeting-collapsible-arrow{
+  font-size:14px;
+  color:#ffffff;
+  transition:transform .2s ease;
+}
+.meeting-collapsible.open .meeting-collapsible-arrow{
+  transform:rotate(180deg);
+}
+.meeting-collapsible-body{
+  display:none;
+  margin-top:12px;
+}
+.meeting-collapsible.open .meeting-collapsible-body{
+  display:block;
+}
+.meeting-attendance-scroll{
+  max-height:320px;
+  overflow:auto;
+  padding-right:4px;
+}
+.meeting-multiselect{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.meeting-multiselect-btn{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  border:1px solid #cbd5e1;
+  border-radius:10px;
+  padding:10px 12px;
+  background:#fff;
+  font:inherit;
+  color:#0f172a;
+  cursor:pointer;
+}
+.meeting-multiselect-btn:focus{
+  outline:none;
+  border-color:#0f766e;
+  box-shadow:0 0 0 3px rgba(15,118,110,.12);
+}
+.meeting-multiselect-label{
+  flex:1;
+  text-align:left;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.meeting-multiselect-arrow{
+  font-size:12px;
+  color:#475569;
+  flex:0 0 auto;
+}
+.meeting-multiselect-panel{
+  position:static;
+  top:auto;
+  left:auto;
+  right:auto;
+  z-index:auto;
+  display:none;
+  background:#fff;
+  border:1px solid #cbd5e1;
+  border-radius:12px;
+  box-shadow:0 12px 24px rgba(15,23,42,.10);
+  padding:10px;
+  margin-top:6px;
+}
+.meeting-multiselect.open .meeting-multiselect-panel{display:block}
+.meeting-multiselect-search{
+  width:100%;
+  border:1px solid #cbd5e1;
+  border-radius:10px;
+  padding:9px 10px;
+  font:inherit;
+  margin-bottom:8px;
+}
+.meeting-multiselect-list{
+  max-height:220px;
+  overflow:auto;
+  display:grid;
+  gap:4px;
+}
+.meeting-multiselect-option{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  padding:6px 4px;
+  border-radius:8px;
+  cursor:pointer;
+}
+.meeting-multiselect-option:hover{background:#f8fafc}
+.meeting-multiselect-option input{margin-top:3px}
+
+.meeting-conclusion-title{
+  color:#b91c1c;
+  font-weight:800;
+  letter-spacing:.2px;
+}
+.meeting-conclusion-box{
+  border:1px solid #fecaca;
+  background:#fff7f7;
+}
+.meeting-conclusion-note{
+  color:#991b1b;
+  font-size:12px;
+  font-weight:600;
+}
+.meeting-conclusion-display{
+  white-space:pre-wrap;
+  border:1px solid #fecaca;
+  background:#ffffff;
+  border-radius:10px;
+  padding:12px;
+  min-height:84px;
+}
+.meeting-minutes-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+
+@media (max-width:1100px){
+  .meeting-layout,
+  .meeting-grid{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+
+<div class="meeting-layout">
+  <section class="meeting-card">
+    <h3 style="margin-top:0;">Họp trực tuyến</h3>
+    <div class="meeting-note" style="margin-bottom:8px;">Tạo phòng họp riêng, điểm danh/báo vắng realtime và điều hành đăng ký phát biểu.</div>
+    <div class="meeting-actions" style="margin-bottom:12px;">
+      <span class="meeting-pill">Tổng số cuộc họp: {{ total_meeting_count }}</span>
+      <span class="meeting-pill">Cuộc họp được mời: {{ invited_meeting_count }}</span>
+    </div>
+    <details class="meeting-tree" open>
+      <summary class="meeting-tree-summary">
+        <span class="meeting-tree-title">Danh sách cuộc họp</span>
+        <span class="meeting-tree-count">{{ groups|length }} cuộc họp</span>
+      </summary>
+
+      <div class="meeting-tree-body">
+        {% if meeting_groups_by_month %}
+          {% for year_bucket in meeting_groups_by_month %}
+            <details class="meeting-year-group" {% if year_bucket.is_open %}open{% endif %}>
+              <summary class="meeting-year-summary">
+                <span>{{ year_bucket.year_label }}</span>
+                <span class="meeting-note">{{ year_bucket.months|length }} tháng</span>
+              </summary>
+
+              <div class="meeting-year-body">
+                {% for month_bucket in year_bucket.months %}
+                  <details class="meeting-month-group" {% if month_bucket.is_open %}open{% endif %}>
+                    <summary class="meeting-month-summary">
+                      <span>{{ month_bucket.month_label }}</span>
+                      <span class="meeting-month-count">{{ month_bucket.count }}</span>
+                    </summary>
+
+                    <div class="meeting-month-body">
+                      <div class="meeting-list">
+                        {% for g in month_bucket.groups %}
+                          {% set mt = g.meeting_row %}
+                          <div class="meeting-item {% if selected_id == g.id %}is-active{% endif %}">
+                            <a class="meeting-item-link" href="/meetings?selected_id={{ g.id }}">
+                              <div class="meeting-top">
+                                <strong>{{ g.name }}</strong>
+                                <span class="meeting-pill {% if mt and mt.meeting_status == 'LIVE' %}live{% elif mt and mt.meeting_status == 'ENDED' %}ended{% endif %}">{{ g.list_status_label }}</span>
+                              </div>
+                              <div class="meeting-meta">
+                                {{ g.member_count or 0 }} thành viên
+                                {% if mt and mt.scheduled_start_at %}
+                                  • {{ mt.scheduled_start_at|format_vn_dt }}
+                                {% endif %}
+                              </div>
+                            </a>
+
+                            {% if g.can_delete_meeting %}
+                              <div class="meeting-item-actions">
+                                <form class="js-meeting-delete-form" method="post" action="/meetings/{{ g.id }}/delete" data-group-id="{{ g.id }}" onsubmit="return confirm('Xác nhận xóa cuộc họp này? Dữ liệu trao đổi và tài liệu trong cuộc họp sẽ bị xóa.');">
+                                  <button type="submit" class="meeting-btn danger-outline">Xóa</button>
+                                </form>
+                              </div>
+                            {% endif %}
+                          </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </details>
+                {% endfor %}
+              </div>
+            </details>
+          {% endfor %}
+        {% else %}
+          <div class="meeting-empty">
+            <div class="meeting-note">Chưa có phòng họp nào.</div>
+          </div>
+        {% endif %}
+      </div>
+    </details>
+
+    <div class="meeting-box" style="margin-top:16px;">
+      <h4>Tạo buổi họp</h4>
+      {% if current_user_can_create_meeting %}
+        <form method="post" action="/meetings/create">
+          <div class="meeting-field">
+            <label>Tên buổi họp</label>
+            <input type="text" name="name" required>
+          </div>
+          <div class="meeting-field">
+            <label>Loại cuộc họp</label>
+            <select name="meeting_scope" id="meetingScopeSelect" required>
+              {% for value, label in meeting_scope_options %}
+                <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="meeting-field" id="meetingCommitteeField" style="display:none;">
+            <label>Ban kiêm nhiệm</label>
+            <select name="committee_id" id="meetingCommitteeSelect">
+              <option value="">-- Chọn Ban kiêm nhiệm --</option>
+              {% for committee in committee_meeting_options %}
+                <option value="{{ committee.id }}">{{ committee.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="meeting-note">
+              Danh sách mời họp chỉ lấy từ thành viên của Ban được chọn.
+            </div>
+          </div>
+
+          <div class="meeting-field">
+            <label>Bắt đầu</label>
+            <input type="datetime-local" name="scheduled_start_at" required>
+          </div>
+          <div class="meeting-field">
+            <label>Kết thúc</label>
+            <input type="datetime-local" name="scheduled_end_at">
+          </div>
+          <div class="meeting-field">
+            <label>Nội dung dự kiến</label>
+            <textarea name="agenda"></textarea>
+          </div>
+          <div class="meeting-field">
+            <label>Thành phần dự họp</label>
+            <div class="meeting-multiselect" id="participantMultiSelect">
+              <button type="button" class="meeting-multiselect-btn" id="participantMultiSelectBtn">
+                <span class="meeting-multiselect-label" id="participantMultiSelectLabel">-- Chọn thành phần dự họp --</span>
+                <span class="meeting-multiselect-arrow">▼</span>
+              </button>
+
+              <div class="meeting-multiselect-panel" id="participantMultiSelectPanel">
+                <input type="text" class="meeting-multiselect-search" id="participantMultiSelectSearch" placeholder="Tìm người dự họp...">
+                <div class="meeting-multiselect-list" id="participantMultiSelectList">
+                  {% for u in meeting_participant_options %}
+                    <label
+                      class="meeting-multiselect-option"
+                      data-label="{{ u.label|lower }}"
+                      data-scopes="{{ u.scopes|join(',') }}"
+                      data-committee-ids="{{ u.committee_ids|default([])|join(',') }}"
+                      data-is-board="{{ '1' if u.is_board else '0' }}"
+                    >
+                      <input type="checkbox" name="participant_ids" value="{{ u.id }}">
+                      <span>{{ u.label }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            <div class="meeting-note">
+              Danh sách mời họp sẽ tự lọc theo loại cuộc họp đã chọn. Nếu bạn là người thiết kế cuộc họp đồng thời là chủ trì thì không cần chọn bạn trong danh sách. 
+            </div>
+          </div>
+
+          <div class="meeting-field" id="meetingCreateHostWrap" style="display:none;">
+            <label>Chọn Chủ trì (HĐTV)</label>
+            <select name="host_user_id" id="meetingCreateHostSelect">
+              <option value="">-- Chọn 1 vị trí HĐTV làm Chủ trì --</option>
+            </select>
+            <div class="meeting-note">
+              Khi Trưởng phòng/Phó phòng thiết kế cuộc họp và thành phần dự họp có từ 2 vị trí HĐTV trở lên, phải chọn 1 vị trí HĐTV làm Chủ trì.
+            </div>
+          </div>
+
+          <button type="submit" class="meeting-btn">Tạo phòng họp</button>
+        </form>
+      {% else %}
+        <div class="meeting-create-locked">
+          Vị trí nhân viên không được tạo cuộc họp.
+        </div>
+      {% endif %}
+    </div>
+    {% if selected_detail %}
+      {% set d = selected_detail %}
+      <div class="meeting-box" style="margin-top:16px;">
+        <h4>Tài liệu phục vụ cuộc họp</h4>
+        <div class="meeting-note" style="margin-bottom:10px;">
+          Chỉ Chủ trì, Thư ký được tải tài liệu lên để chuẩn bị cho nội dung cuộc họp. Khi cuộc họp kết thúc, tải lên văn bản kết luận cuộc họp.
+        </div>
+
+        <div class="meeting-doc-list">
+          {% for doc in d.meeting_documents %}
+            <div class="meeting-doc-item">
+              <div class="meeting-doc-title">{{ doc.filename }}</div>
+              <div class="meeting-doc-meta">Tải lên bởi {{ doc.sender_name }} • {{ doc.created_at_text }}</div>
+              <div class="meeting-doc-actions">
+                {% if doc.is_previewable %}
+                  <a class="meeting-btn secondary" href="{{ doc.preview_url or doc.path }}" target="_blank" rel="noopener">Xem</a>
+                {% endif %}
+                <a class="meeting-btn secondary" href="{{ doc.download_url or doc.path }}">Tải về</a>
+              </div>
+            </div>
+          {% else %}
+            <div class="meeting-note">Chưa có tài liệu phục vụ cuộc họp.</div>
+          {% endfor %}
+        </div>
+
+        <form id="meetingDocumentUploadForm" enctype="multipart/form-data" style="margin-top:12px;">
+          <input type="hidden" name="group_id" value="{{ d.group.id }}">
+          <div class="meeting-field">
+            <label>Tải tài liệu phục vụ cuộc họp / kết luận cuộc họp</label>
+            <input type="file" name="file" {% if not d.can_upload_documents %}disabled{% endif %} required>
+          </div>
+          <button type="submit" class="meeting-btn secondary" {% if not d.can_upload_documents %}disabled{% endif %}>Upload tài liệu</button>
+          {% if not d.can_upload_documents %}
+            <div class="meeting-note" style="margin-top:8px;">Bạn không có quyền tải tài liệu lên. Chỉ Chủ trì hoặc Thư ký được thực hiện.</div>
+          {% endif %}
+        </form>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="meeting-card">
+    {% if selected_detail %}
+      {% set d = selected_detail %}
+      <div class="meeting-top">
+        <div>
+          <h2 style="margin:0 0 6px;">{{ d.group.name }}</h2>
+          <div class="meeting-note">{{ d.scope_label }} • Thiết kế: {{ d.designed_by.full_name if d.designed_by else '—' }}</div>
+        </div>
+
+        <div class="meeting-actions">
+          <span class="meeting-pill {% if d.meeting.meeting_status == 'LIVE' %}live{% elif d.meeting.meeting_status == 'ENDED' %}ended{% endif %}" id="meetingStatusLabel">{{ d.status_label }}</span>
+          {% if d.can_delete_meeting %}
+            <form class="js-meeting-delete-form" method="post" action="/meetings/{{ d.group.id }}/delete" data-group-id="{{ d.group.id }}" onsubmit="return confirm('Xác nhận xóa cuộc họp này? Dữ liệu trao đổi và tài liệu trong cuộc họp sẽ bị xóa.');">
+              <button type="submit" class="meeting-btn danger-outline">Xóa cuộc họp</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="meeting-grid" style="margin-top:16px;">
+        <div class="meeting-box">
+          <h4>Điều hành cuộc họp</h4>
+          <div class="meeting-note">Bắt đầu: {{ d.meeting.scheduled_start_at|format_vn_dt }}{% if d.meeting.scheduled_end_at %} • Kết thúc: {{ d.meeting.scheduled_end_at|format_vn_dt }}{% endif %}</div>
+          <div class="meeting-note" style="margin-top:6px;">
+            Chủ trì: <strong id="meetingHostName">{{ d.host.full_name if d.host else '—' }}</strong>
+            {% if d.host_attendance_status == 'ABSENT' %}
+              <span style="color:#b91c1c;font-weight:700;">(đã báo vắng)</span>
+            {% endif %}
+            • Thư ký: <strong id="meetingSecretaryName">{{ d.secretary.full_name if d.secretary else 'Chưa chỉ định' }}</strong>
+          </div>
+          <div class="meeting-note" style="margin-top:6px;">Người được điều chỉnh thời gian cuộc họp: Chủ trì, Thư ký hoặc người thiết kế cuộc họp.</div>
+          {% if d.meeting.agenda %}<div style="margin-top:10px;">{{ d.meeting.agenda }}</div>{% endif %}
+
+          {% if d.can_manage_schedule %}
+            <form method="post" action="/meetings/{{ d.group.id }}/schedule" style="margin-top:14px;">
+              <div class="meeting-field">
+                <label>Điều chỉnh thời gian bắt đầu</label>
+                <input type="datetime-local" name="scheduled_start_at" value="{{ d.scheduled_start_value }}" required>
+              </div>
+              <div class="meeting-field">
+                <label>Điều chỉnh thời gian kết thúc</label>
+                <input type="datetime-local" name="scheduled_end_at" value="{{ d.scheduled_end_value }}">
+              </div>
+              <button type="submit" class="meeting-btn secondary">Cập nhật thời gian họp</button>
+            </form>
+
+            {% if d.can_end_now %}
+              <form id="meetingEndNowForm" method="post" action="/meetings/{{ d.group.id }}/end-now" style="margin-top:10px;">
+                <button type="submit" class="meeting-btn warn">Kết thúc ngay cuộc họp</button>
+              </form>
+            {% endif %}
+          {% endif %}
+          <div class="meeting-actions" style="margin-top:12px;">
+            <button
+              type="button"
+              class="meeting-btn warn"
+              id="meetingAbsentBtn"
+              {% if d.meeting.meeting_status != 'UPCOMING' or d.current_attendance_status == 'ABSENT' %}style="display:none;"{% endif %}
+            >Báo vắng</button>
+
+            <button
+              type="button"
+              class="meeting-btn secondary"
+              id="meetingCancelAbsentBtn"
+              {% if d.meeting.meeting_status != 'UPCOMING' or d.current_attendance_status != 'ABSENT' %}style="display:none;"{% endif %}
+            >Hủy báo vắng</button>
+
+            <button
+              type="button"
+              class="meeting-btn"
+              id="meetingCheckinBtn"
+              {% if d.meeting.meeting_status != 'LIVE' %}style="display:none;"{% endif %}
+            >Điểm danh</button>
+
+            <button
+              type="button"
+              class="meeting-btn secondary"
+              id="meetingSpeakBtn"
+              {% if not d.can_register_speaker %}disabled{% endif %}
+            >Đăng ký phát biểu</button>
+            {% if d.can_request_leave %}
+              <form id="meetingLeaveRequestForm" method="post" action="/meetings/{{ d.group.id }}/leave/request" style="margin-top:10px;width:100%;">
+                <div class="meeting-field" style="margin-bottom:8px;">
+                  <label>Lý do xin rời họp</label>
+                  <textarea name="note" placeholder="Nhập lý do xin rời cuộc họp..."></textarea>
+                </div>
+                <button type="submit" class="meeting-btn warn">Xin phép rời họp</button>
+              </form>
+            {% elif d.has_pending_leave_request %}
+              <div class="meeting-note" id="meetingLeavePendingHint" style="margin-top:10px;color:#92400e;">
+                Bạn đã gửi yêu cầu xin rời họp và đang chờ Chủ trì duyệt.
+              </div>
+            {% endif %}
+			
+          </div>
+          <div class="meeting-note" id="meetingActionHint" style="margin-top:8px;">
+            {% if d.meeting.meeting_status == 'LIVE' %}
+              Cuộc họp đã bắt đầu. Hai nút Báo vắng / Hủy báo vắng đã ẩn, chuyển sang Điểm danh.
+            {% elif d.current_attendance_status == 'ABSENT' %}
+              Bạn đã báo vắng. Có thể hủy báo vắng trước giờ họp.
+            {% else %}
+              Trước giờ họp, người dự họp có thể báo vắng.
+            {% endif %}
+          </div>
+          {% if d.is_host %}
+            <form method="post" action="/meetings/{{ d.group.id }}/secretary" style="margin-top:14px;">
+              <div class="meeting-field">
+                <label>Chỉ định thư ký</label>
+                <select name="secretary_user_id">
+                  <option value="">-- Chưa chỉ định --</option>
+                  {% for u in d.available_secretaries %}
+                    <option value="{{ u.id }}" {% if d.secretary and d.secretary.id == u.id %}selected{% endif %}>{{ u.full_name if u.full_name else u.username }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <button type="submit" class="meeting-btn secondary">Cập nhật thư ký</button>
+            </form>
+          {% endif %}
+
+          {% if d.can_assign_host %}
+            <form method="post" action="/meetings/{{ d.group.id }}/host" style="margin-top:14px;">
+              <div class="meeting-field">
+                <label>Trao quyền Chủ trì</label>
+                <select name="host_user_id" required>
+                  <option value="">-- Chọn người nhận quyền Chủ trì --</option>
+                  {% for u in d.available_hosts %}
+                    <option value="{{ u.id }}" {% if d.host and d.host.id == u.id %}selected{% endif %}>{{ u.full_name if u.full_name else u.username }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <button type="submit" class="meeting-btn secondary">Cập nhật Chủ trì</button>
+              <div class="meeting-note" style="margin-top:8px;">
+                Nếu Chủ trì báo vắng mà chưa kịp trao quyền, hệ thống sẽ tự động ưu tiên giao cho Thư ký; nếu không có Thư ký hợp lệ thì giao cho Người thiết kế.
+              </div>
+            </form>
+          {% endif %}
+        </div>
+
+        <div class="meeting-box">
+          <div class="meeting-collapsible" id="meetingAttendanceBox">
+            <button type="button" class="meeting-collapsible-toggle" id="meetingAttendanceToggle">
+              <span class="meeting-collapsible-title">
+                <span>Điểm danh và hiện diện</span>
+              </span>
+              <span class="meeting-collapsible-summary">
+                <span class="meeting-summary-pill pending">Chưa phản hồi: {{ d.attendance_pending_count }}</span>
+                <span class="meeting-summary-pill absent">Báo vắng: {{ d.attendance_absent_count }}</span>
+                <span class="meeting-summary-pill checkedin">Đã điểm danh: {{ d.attendance_checked_in_count }}</span>
+              </span>
+              <span class="meeting-collapsible-arrow">▼</span>
+            </button>
+
+            <div class="meeting-collapsible-body">
+              <div class="meeting-note" id="meetingPresenceSummary" style="margin-bottom:10px;">
+                <strong>Đang ở trong phòng:</strong>
+                <span id="meetingPresenceMembers">
+                  {% set online_names = [] %}
+                  {% for row in d.attendance_rows %}
+                    {% if (row.presence_status or '').upper() == 'ONLINE' %}
+                      {% set _ = online_names.append(row.user.full_name if row.user else row.user_id) %}
+                    {% endif %}
+                  {% endfor %}
+                  {% if online_names %}
+                    {{ online_names|join(', ') }}
+                  {% else %}
+                    Chưa có người nào đang ở trong phòng.
+                  {% endif %}
+                </span>
+              </div>
+
+              <div class="meeting-attendance-scroll">
+                <div id="meetingAttendanceList">
+                  {% for row in d.attendance_rows %}
+                    <div
+                      class="meeting-attendance-row"
+                      data-user-id="{{ row.user_id }}"
+                      data-attendance-status="{{ row.attendance_status or 'PENDING' }}"
+                      data-presence-status="{{ row.presence_status or 'OFFLINE' }}"
+                    >
+                      <div>
+                        <strong>{{ row.user.full_name if row.user else row.user_id }}</strong>
+                        <div class="meeting-note js-presence-label">{{ row.presence_status_label }}</div>
+                      </div>
+                      <div style="text-align:right;">
+                        <div class="meeting-pill js-attendance-label {% if row.attendance_status == 'CHECKED_IN' %}live{% elif row.attendance_status == 'ABSENT' %}ended{% endif %}">
+                          {{ row.attendance_status_label }}
+                        </div>
+                        <div class="meeting-note js-absent-reason" {% if not row.absent_reason %}style="display:none;"{% endif %}>
+                          {{ row.absent_reason or '' }}
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="meeting-grid" style="margin-top:16px;">
+        <div class="meeting-box">
+          <h4>Trao đổi trong cuộc họp</h4>
+          <div class="meeting-chat-list" id="meetingMessageList">
+            {% for m in d.messages %}
+              <div class="meeting-chat-item {% if m.is_mine %}mine{% endif %}" data-message-id="{{ m.id }}">
+                <div class="meeting-chat-meta"><strong>{{ m.sender_name }}</strong> • {{ m.created_at_text }}</div>
+                <div>{{ m.content }}</div>
+                {% if m.attachments %}
+                  <div class="meeting-attachments" style="margin-top:8px;">
+                    {% for att in m.attachments %}
+                      {% if att.is_previewable %}
+                        <a class="meeting-btn secondary" href="{{ att.path }}" target="_blank" rel="noopener">Xem</a>
+                      {% endif %}
+                      <a class="meeting-btn secondary" href="{{ att.path }}" download>Tải về {{ att.filename }}</a>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+		  
+		  {% if d.can_edit_conclusion %}
+          <div class="meeting-box meeting-conclusion-box" style="margin-top:12px;">
+            <h4 class="meeting-conclusion-title">Kết luận cuộc họp</h4>
+            <div class="meeting-note" style="margin-bottom:8px;">
+              Nội dung này chỉ dành cho Chủ trì để chốt kết luận chính thức của cuộc họp.
+            </div>
+
+            <form id="meetingConclusionForm">
+              <div class="meeting-field">
+                <label class="meeting-conclusion-note">Kết luận cuộc họp (Chủ trì)</label>
+                <textarea name="content" id="meetingConclusionTextarea" placeholder="Nhập kết luận cuộc họp.">{{ d.conclusion_text }}</textarea>
+              </div>
+              <div class="meeting-actions">
+                <button type="submit" class="meeting-btn warn">Lưu kết luận</button>
+              </div>
+              <div class="meeting-note" id="meetingConclusionHint" style="margin-top:8px;">
+                {% if d.conclusion_updated_text %}
+                  Đã cập nhật lần gần nhất: {{ d.conclusion_updated_text }}
+                {% else %}
+                  Chưa có kết luận cuộc họp.
+                {% endif %}
+              </div>
+            </form>
+          </div>
+          {% endif %}
+		  
+		  {% if d.can_export_minutes %}
+          <div class="meeting-minutes-actions" style="margin-top:12px;">
+            <a class="meeting-btn secondary" href="/meetings/{{ d.group.id }}/minutes.txt">Xuất biên bản (.txt)</a>
+          </div>
+          {% endif %}
+
+          <form id="meetingSendForm" style="margin-top:12px;">
+            <input type="hidden" name="group_id" value="{{ d.group.id }}">
+            <div class="meeting-field">
+              <label>Nội dung trao đổi</label>
+              <textarea name="content" required></textarea>
+            </div>
+            <div class="meeting-actions">
+              <button type="submit" class="meeting-btn" {% if not d.can_send_meeting_message %}disabled{% endif %}>Gửi tin</button>
+            </div>
+            {% if not d.can_send_meeting_message %}
+              <div class="meeting-note" id="meetingSendHint" style="margin-top:8px;">Bạn có thể gõ trước nội dung, nhưng chỉ gửi được sau khi được Chủ trì cho phép.</div>
+            {% else %}
+              <div class="meeting-note" id="meetingSendHint" style="margin-top:8px;">Bạn đã được phép phát biểu. Sau khi gửi xong 1 lần, quyền gửi sẽ tự khóa và muốn phát biểu tiếp phải đăng ký lại. Chủ trì cuộc họp không bị hạn chế quyền này. </div>
+            {% endif %}
+          </form>
+          <form id="meetingChatUploadForm" enctype="multipart/form-data" style="margin-top:12px;">
+            <input type="hidden" name="group_id" value="{{ d.group.id }}">
+            <div class="meeting-field">
+              <label>Upload file trao đổi trong cuộc họp</label>
+              <input type="file" name="file" required>
+            </div>
+            <button type="submit" class="meeting-btn secondary">Upload file trao đổi</button>
+          </form>		  
+        </div>
+        {% if d.is_host %}
+        <div class="meeting-box">
+          <h4>Danh sách xin rời cuộc họp</h4>
+          <div id="meetingLeaveRequestList">
+            {% for row in d.leave_requests %}
+              <div class="meeting-speaker-row" data-leave-request-id="{{ row.id }}" data-user-id="{{ row.user_id }}">
+                <div>
+                  <strong>{{ row.user_name }}</strong>
+                  <div class="meeting-note">
+                    {{ row.request_status_label }}{% if row.note %} • {{ row.note }}{% endif %}
+                  </div>
+                </div>
+                <div class="meeting-actions">
+                  <form method="post" action="/meetings/{{ d.group.id }}/leave/{{ row.id }}/approve" class="meetingLeaveApproveForm">
+                    <button type="submit" class="meeting-btn warn">Chấp thuận rời họp</button>
+                  </form>
+                  <form method="post" action="/meetings/{{ d.group.id }}/leave/{{ row.id }}/reject" class="meetingLeaveRejectForm">
+                    <button type="submit" class="meeting-btn secondary">Không chấp thuận</button>
+                  </form>
+                </div>
+              </div>
+            {% else %}
+              <div class="meeting-note" id="meetingLeaveRequestEmpty">Chưa có yêu cầu xin rời cuộc họp.</div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        <div class="meeting-box">
+          <h4>Danh sách đăng ký phát biểu</h4>
+          <div id="meetingSpeakerList">
+            {% for row in d.speaker_requests %}
+              <div class="meeting-speaker-row" data-speaker-id="{{ row.id }}">
+                <div>
+                  <strong>#{{ row.queue_no }} {{ row.user_name }}</strong>
+                  <div class="meeting-note">{{ row.request_status_label }}{% if row.note %} • {{ row.note }}{% endif %}</div>
+                </div>
+                {% if d.is_host %}
+                  <div class="meeting-actions">
+                    <button type="button" class="meeting-btn secondary js-speaker-approve" data-speaker-id="{{ row.id }}">Cho phép</button>
+                    <button type="button" class="meeting-btn secondary js-speaker-move" data-direction="up" data-speaker-id="{{ row.id }}">↑</button>
+                    <button type="button" class="meeting-btn secondary js-speaker-move" data-direction="down" data-speaker-id="{{ row.id }}">↓</button>
+                  </div>
+                {% endif %}
+              </div>
+            {% else %}
+              <div class="meeting-note">Chưa có đăng ký phát biểu.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="meeting-note">Chọn một phòng họp ở bên trái để theo dõi và điều hành.</div>
+    {% endif %}
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  function initParticipantMultiSelect() {
+    var wrap = document.getElementById("participantMultiSelect");
+    var btn = document.getElementById("participantMultiSelectBtn");
+    var label = document.getElementById("participantMultiSelectLabel");
+    var panel = document.getElementById("participantMultiSelectPanel");
+    var search = document.getElementById("participantMultiSelectSearch");
+    var list = document.getElementById("participantMultiSelectList");
+    var scopeSelect = document.getElementById("meetingScopeSelect");
+    var hostWrap = document.getElementById("meetingCreateHostWrap");
+    var hostSelect = document.getElementById("meetingCreateHostSelect");
+    var currentUserIsDeptManager = {{ current_user_is_dept_manager | tojson }};
+
+    if (!wrap || !btn || !label || !panel || !search || !list) {
+      return;
+    }
+
+    var checkboxes = list.querySelectorAll('input[name="participant_ids"]');
+    var options = list.querySelectorAll(".meeting-multiselect-option");
+
+    var committeeField = document.getElementById("meetingCommitteeField");
+    var committeeSelect = document.getElementById("meetingCommitteeSelect");
+
+    function currentScope() {
+      return scopeSelect ? (scopeSelect.value || "").trim() : "";
+    }
+
+    function currentCommitteeId() {
+      return committeeSelect ? (committeeSelect.value || "").trim() : "";
+    }
+
+    function optionSupportsScope(option, scopeValue) {
+      var raw = (option.getAttribute("data-scopes") || "").trim();
+      if (!raw || !scopeValue) {
+        return true;
+      }
+
+      var scopes = raw.split(",").map(function (x) { return x.trim(); });
+      if (scopes.indexOf(scopeValue) < 0) {
+        return false;
+      }
+
+      if (scopeValue === "COMMITTEE") {
+        var selectedCommitteeId = currentCommitteeId();
+        if (!selectedCommitteeId) {
+          return false;
+        }
+
+        var rawCommitteeIds = (option.getAttribute("data-committee-ids") || "").trim();
+        if (!rawCommitteeIds) {
+          return false;
+        }
+
+        return rawCommitteeIds.split(",").map(function (x) { return x.trim(); }).indexOf(selectedCommitteeId) >= 0;
+      }
+
+      return true;
+    }
+
+    function syncCommitteeField() {
+      if (!committeeField) {
+        return;
+      }
+
+      var isCommittee = currentScope() === "COMMITTEE";
+      committeeField.style.display = isCommittee ? "" : "none";
+
+      if (!isCommittee && committeeSelect) {
+        committeeSelect.value = "";
+      }
+    }
+
+    function updateLabel() {
+      var selectedTexts = [];
+      checkboxes.forEach(function (cb) {
+        if (cb.checked && !cb.disabled) {
+          var textNode = cb.parentElement ? cb.parentElement.querySelector("span") : null;
+          var text = textNode ? (textNode.textContent || "").trim() : "";
+          if (text) {
+            selectedTexts.push(text);
+          }
+        }
+      });
+
+      if (!selectedTexts.length) {
+        label.textContent = "-- Chọn thành phần dự họp --";
+        return;
+      }
+
+      if (selectedTexts.length === 1) {
+        label.textContent = selectedTexts[0];
+        return;
+      }
+
+      label.textContent = "Đã chọn " + selectedTexts.length + " người";
+    }
+
+    function rebuildHostOptions() {
+      if (!hostWrap || !hostSelect) {
+        return;
+      }
+
+      var scopeValue = currentScope();
+      var selectedBoardOptions = [];
+
+      options.forEach(function (option) {
+        var cb = option.querySelector('input[name="participant_ids"]');
+        if (!cb || cb.disabled || !cb.checked) {
+          return;
+        }
+
+        var isBoard = (option.getAttribute("data-is-board") || "") === "1";
+        if (!isBoard) {
+          return;
+        }
+
+        var textNode = option.querySelector("span");
+        var text = textNode ? (textNode.textContent || "").trim() : "";
+        if (!text) {
+          return;
+        }
+
+        selectedBoardOptions.push({
+          id: cb.value,
+          label: text
+        });
+      });
+
+      hostSelect.innerHTML = '<option value="">-- Chọn 1 vị trí HĐTV làm Chủ trì --</option>';
+
+      selectedBoardOptions.forEach(function (item) {
+        var opt = document.createElement("option");
+        opt.value = item.id;
+        opt.textContent = item.label;
+        hostSelect.appendChild(opt);
+      });
+
+      var mustChooseBoardHost =
+        !!currentUserIsDeptManager &&
+        scopeValue === "HDTV" &&
+        selectedBoardOptions.length >= 2;
+
+      hostWrap.style.display = mustChooseBoardHost ? "" : "none";
+
+      if (!mustChooseBoardHost) {
+        hostSelect.value = "";
+      }
+    }
+
+    function applyScopeFilter() {
+      syncCommitteeField();
+      var scopeValue = currentScope();
+      var keyword = (search.value || "").trim().toLowerCase();
+
+      options.forEach(function (option) {
+        var cb = option.querySelector('input[name="participant_ids"]');
+        var text = (option.getAttribute("data-label") || "").toLowerCase();
+
+        var matchScope = optionSupportsScope(option, scopeValue);
+        var matchKeyword = !keyword || text.indexOf(keyword) >= 0;
+        var visible = matchScope && matchKeyword;
+
+        option.style.display = visible ? "flex" : "none";
+
+        if (cb) {
+          cb.disabled = !matchScope;
+          if (!matchScope) {
+            cb.checked = false;
+          }
+        }
+      });
+
+      updateLabel();
+      rebuildHostOptions();
+    }
+
+    btn.addEventListener("click", function (event) {
+      event.preventDefault();
+      wrap.classList.toggle("open");
+      if (wrap.classList.contains("open")) {
+        applyScopeFilter();
+        search.focus();
+      }
+    });
+
+    document.addEventListener("click", function (event) {
+      if (!wrap.contains(event.target)) {
+        wrap.classList.remove("open");
+      }
+    });
+
+    search.addEventListener("input", applyScopeFilter);
+
+    checkboxes.forEach(function (cb) {
+      cb.addEventListener("change", function () {
+        updateLabel();
+        rebuildHostOptions();
+      });
+    });
+
+    if (scopeSelect) {
+      scopeSelect.addEventListener("change", function () {
+        search.value = "";
+        applyScopeFilter();
+      });
+    }
+
+    if (committeeSelect) {
+      committeeSelect.addEventListener("change", function () {
+        search.value = "";
+        applyScopeFilter();
+      });
+    }
+
+    applyScopeFilter();
+    updateLabel();
+    rebuildHostOptions();
+  }
+
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initParticipantMultiSelect);
+  } else {
+    initParticipantMultiSelect();
+  }
+})();
+</script>
+{% if selected_detail %}
+<script>
+(function () {
+  "use strict";
+
+  var groupId = {{ selected_detail.group.id | tojson }};
+  var currentUserId = {{ current_user.id | tojson }};
+  var isHostView = {{ d.is_host | tojson }};
+  var scheduledStartValue = {{ selected_detail.scheduled_start_value | tojson }};
+  var scheduledEndValue = {{ selected_detail.scheduled_end_value | tojson }};
+  var meetingStatusRaw = {{ selected_detail.meeting.meeting_status | tojson }};
+  var meetingStatusTimerStart = null;
+  var meetingStatusTimerEnd = null;
+
+  var meetingStatusLabel = document.getElementById("meetingStatusLabel");
+  var absentBtn = document.getElementById("meetingAbsentBtn");
+  var cancelAbsentBtn = document.getElementById("meetingCancelAbsentBtn");
+  var checkinBtn = document.getElementById("meetingCheckinBtn");
+  var speakBtn = document.getElementById("meetingSpeakBtn");
+  var actionHint = document.getElementById("meetingActionHint");
+  var endNowForm = document.getElementById("meetingEndNowForm");
+
+  var messageList = document.getElementById("meetingMessageList");
+  var sendForm = document.getElementById("meetingSendForm");
+  var meetingDocumentUploadForm = document.getElementById("meetingDocumentUploadForm");
+  var meetingChatUploadForm = document.getElementById("meetingChatUploadForm");
+
+  var meetingAttendanceBox = document.getElementById("meetingAttendanceBox");
+  var meetingAttendanceToggle = document.getElementById("meetingAttendanceToggle");
+  var meetingPresenceMembers = document.getElementById("meetingPresenceMembers");
+  var meetingSendHint = document.getElementById("meetingSendHint");
+
+  var meetingLeaveRequestList = document.getElementById("meetingLeaveRequestList");
+  var meetingLeaveRequestForm = document.getElementById("meetingLeaveRequestForm");
+
+  var meetingMessageTextarea = sendForm ? sendForm.querySelector('textarea[name="content"]') : null;
+  var meetingDraftStorageKey = "meeting_draft_" + String(groupId || "");
+  var meetingLeaveSent = false;
+
+  function wsBase() {
+    var protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    return protocol + "//" + window.location.host;
+  }
+
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function setText(id, value) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.textContent = value || "";
+    }
+  }
+
+  function updateMeetingActionHint(text) {
+    if (actionHint) {
+      actionHint.textContent = text || "";
+    }
+  }
+
+  function readMeetingDraft() {
+    if (!meetingMessageTextarea) {
+      return "";
+    }
+    try {
+      return sessionStorage.getItem(meetingDraftStorageKey) || "";
+    } catch (error) {
+      return meetingMessageTextarea.value || "";
+    }
+  }
+
+  function writeMeetingDraft(value) {
+    if (!meetingMessageTextarea) {
+      return;
+    }
+    try {
+      sessionStorage.setItem(meetingDraftStorageKey, value || "");
+    } catch (error) {
+      return;
+    }
+  }
+
+  function clearMeetingDraft() {
+    if (!meetingMessageTextarea) {
+      return;
+    }
+    try {
+      sessionStorage.removeItem(meetingDraftStorageKey);
+    } catch (error) {
+      return;
+    }
+  }
+
+  function restoreMeetingDraft() {
+    if (!meetingMessageTextarea) {
+      return;
+    }
+    var savedDraft = readMeetingDraft();
+    if (savedDraft) {
+      meetingMessageTextarea.value = savedDraft;
+    }
+  }
+
+  function bindMeetingDraftPersistence() {
+    if (!meetingMessageTextarea) {
+      return;
+    }
+    restoreMeetingDraft();
+    meetingMessageTextarea.addEventListener("input", function () {
+      writeMeetingDraft(meetingMessageTextarea.value || "");
+    });
+  }
+
+  function initAttendanceCollapse() {
+    if (!meetingAttendanceBox || !meetingAttendanceToggle) {
+      return;
+    }
+    meetingAttendanceToggle.addEventListener("click", function () {
+      meetingAttendanceBox.classList.toggle("open");
+    });
+  }
+
+  function setSpeakState(canRegister) {
+    if (!speakBtn) {
+      return;
+    }
+    speakBtn.disabled = !canRegister;
+  }
+
+  function setMeetingSendState(canSend) {
+    if (!sendForm) {
+      return;
+    }
+
+    var textarea = meetingMessageTextarea || sendForm.querySelector('textarea[name="content"]');
+    var button = sendForm.querySelector('button[type="submit"]');
+
+    if (textarea) {
+      textarea.disabled = false;
+      textarea.readOnly = false;
+    }
+    if (button) {
+      button.disabled = !canSend;
+    }
+
+    if (meetingSendHint) {
+      meetingSendHint.textContent = canSend
+        ? "Bạn đã được phép phát biểu. Sau khi gửi xong 1 lần, quyền gửi sẽ tự khóa và muốn phát biểu tiếp phải đăng ký lại."
+        : "Bạn có thể gõ trước nội dung, nhưng chỉ gửi được sau khi được Chủ trì cho phép.";
+    }
+  }
+
+  function updateSendSpeakButtons(canSend, canRegister) {
+    setMeetingSendState(!!canSend);
+    setSpeakState(!!canRegister);
+  }
+
+  function toggleAbsentButtons(isAbsent) {
+    if (absentBtn) {
+      absentBtn.style.display = isAbsent ? "none" : "";
+    }
+    if (cancelAbsentBtn) {
+      cancelAbsentBtn.style.display = isAbsent ? "" : "none";
+    }
+  }
+
+  function markCheckinDone() {
+    if (checkinBtn) {
+      checkinBtn.disabled = true;
+      checkinBtn.textContent = "Đã điểm danh";
+      checkinBtn.style.display = "";
+    }
+  }
+
+  function updateMeetingScheduleText(startText, endText) {
+    var noteBlocks = document.querySelectorAll(".meeting-box .meeting-note");
+    noteBlocks.forEach(function (el) {
+      var txt = (el.textContent || "").trim();
+      if (txt.indexOf("Bắt đầu:") === 0) {
+        var nextText = "Bắt đầu: " + (startText || "—");
+        if (endText) {
+          nextText += " • Kết thúc: " + endText;
+        }
+        el.textContent = nextText;
+      }
+    });
+  }
+
+  function updateMeetingActionMode(mode, statusLabel, currentAttendanceStatus, canRegisterSpeaker, canSendMeetingMessage) {
+    if (meetingStatusLabel && statusLabel) {
+      meetingStatusLabel.textContent = statusLabel;
+    }
+
+    if (mode === "checkin") {
+      if (absentBtn) absentBtn.style.display = "none";
+      if (cancelAbsentBtn) cancelAbsentBtn.style.display = "none";
+      if (checkinBtn) checkinBtn.style.display = "inline-flex";
+      updateMeetingActionHint("Cuộc họp đã bắt đầu. Hai nút Báo vắng / Hủy báo vắng đã ẩn, chuyển sang Điểm danh.");
+      setSpeakState(!!canRegisterSpeaker);
+      setMeetingSendState(!!canSendMeetingMessage);
+      return;
+    }
+
+    if (mode === "absent") {
+      if (checkinBtn) checkinBtn.style.display = "none";
+      if (String(currentAttendanceStatus || "").toUpperCase() === "ABSENT") {
+        if (absentBtn) absentBtn.style.display = "none";
+        if (cancelAbsentBtn) cancelAbsentBtn.style.display = "inline-flex";
+        updateMeetingActionHint("Bạn đã báo vắng. Có thể hủy báo vắng trước giờ họp.");
+      } else {
+        if (absentBtn) absentBtn.style.display = "inline-flex";
+        if (cancelAbsentBtn) cancelAbsentBtn.style.display = "none";
+        updateMeetingActionHint("Trước giờ họp, người dự họp có thể báo vắng.");
+      }
+      setSpeakState(!!canRegisterSpeaker);
+      setMeetingSendState(!!canSendMeetingMessage);
+      return;
+    }
+
+    if (absentBtn) absentBtn.style.display = "none";
+    if (cancelAbsentBtn) cancelAbsentBtn.style.display = "none";
+    if (checkinBtn) checkinBtn.style.display = "none";
+    updateMeetingActionHint("Cuộc họp đã kết thúc.");
+    setSpeakState(false);
+    setMeetingSendState(false);
+  }
+
+  function syncMeetingState() {
+    fetch("/meetings/" + groupId + "/sync", {
+      method: "POST",
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        "Accept": "application/json"
+      }
+    })
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (data) {
+          return { ok: r.ok, data: data || {} };
+        });
+      })
+      .then(function (result) {
+        var data = result.data || {};
+		
+		if (data.removed_from_meeting) {
+          window.alert(data.detail || "Anh/chị đã bị đưa ra khỏi cuộc họp.");
+          window.location.href = data.redirect_url || "/meetings";
+          return;
+        }
+		
+        if (!result.ok || !data.ok) {
+          return;
+        }
+
+        if (typeof data.meeting_status !== "undefined") {
+          meetingStatusRaw = data.meeting_status || meetingStatusRaw;
+        }
+
+        updateMeetingActionMode(
+          data.action_mode,
+          data.meeting_status_label,
+          data.current_attendance_status,
+          data.can_register_speaker,
+          data.can_send_meeting_message
+        );
+
+        scheduleMeetingStatusTimers();
+      })
+      .catch(function () {});
+  }
+  
+  function parseLocalDateTime(value) {
+    if (!value) {
+      return null;
+    }
+    var text = String(value || "").trim();
+    if (!text) {
+      return null;
+    }
+    var normalized = text.length === 16 ? text + ":00" : text;
+    var dt = new Date(normalized);
+    if (isNaN(dt.getTime())) {
+      return null;
+    }
+    return dt;
+  }
+
+  function clearMeetingStatusTimers() {
+    if (meetingStatusTimerStart) {
+      clearTimeout(meetingStatusTimerStart);
+      meetingStatusTimerStart = null;
+    }
+    if (meetingStatusTimerEnd) {
+      clearTimeout(meetingStatusTimerEnd);
+      meetingStatusTimerEnd = null;
+    }
+  }
+
+  function scheduleMeetingStatusTimers() {
+    clearMeetingStatusTimers();
+
+    var now = new Date();
+    var startAt = parseLocalDateTime(scheduledStartValue);
+    var endAt = parseLocalDateTime(scheduledEndValue);
+
+    if (startAt && now.getTime() < startAt.getTime() && String(meetingStatusRaw || "").toUpperCase() === "UPCOMING") {
+      meetingStatusTimerStart = setTimeout(function () {
+        syncMeetingState();
+      }, Math.max(0, startAt.getTime() - now.getTime()) + 300);
+    }
+
+    if (endAt && now.getTime() < endAt.getTime() && String(meetingStatusRaw || "").toUpperCase() !== "ENDED") {
+      meetingStatusTimerEnd = setTimeout(function () {
+        syncMeetingState();
+      }, Math.max(0, endAt.getTime() - now.getTime()) + 300);
+    }
+  }
+
+  function joinPresence() {
+    fetch("/meetings/" + groupId + "/presence/join", {
+      method: "POST",
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        "Accept": "application/json"
+      }
+    }).catch(function () {});
+  }
+
+  function leavePresence() {
+    if (meetingLeaveSent) {
+      return;
+    }
+    meetingLeaveSent = true;
+
+    if (!navigator.sendBeacon) {
+      return;
+    }
+    navigator.sendBeacon("/meetings/" + groupId + "/presence/leave");
+  }
+
+  function buildAttachmentHtml(attachments) {
+    if (!attachments || !attachments.length) {
+      return "";
+    }
+
+    var html = '<div class="meeting-attachments" style="margin-top:8px;">';
+    attachments.forEach(function (att) {
+      if (att.is_previewable) {
+        html += '<a class="meeting-btn secondary" href="' + att.path + '" target="_blank" rel="noopener">Xem</a>';
+      }
+      html += '<a class="meeting-btn secondary" href="' + att.path + '" download>Tải về ' + escapeHtml(att.filename || "Tệp đính kèm") + '</a>';
+    });
+    html += "</div>";
+    return html;
+  }
+
+  function appendMessage(message) {
+    if (!messageList || !message || !message.id) {
+      return;
+    }
+
+    if (messageList.querySelector('[data-message-id="' + message.id + '"]')) {
+      return;
+    }
+
+    var wrap = document.createElement("div");
+    wrap.className = "meeting-chat-item" + (message.is_mine ? " mine" : "");
+    wrap.setAttribute("data-message-id", message.id);
+    wrap.innerHTML =
+      '<div class="meeting-chat-meta"><strong>' + escapeHtml(message.sender_name || "Người dùng") + '</strong> • ' + escapeHtml(message.created_at_text || "") + '</div>' +
+      '<div>' + escapeHtml(message.content || "") + '</div>' +
+      buildAttachmentHtml(message.attachments || []);
+
+    messageList.appendChild(wrap);
+    messageList.scrollTop = messageList.scrollHeight;
+  }
+
+  function appendMeetingChatMessage(message) {
+    appendMessage(message);
+  }
+
+  function removeMeetingItemsByGroupId(targetGroupId) {
+    if (!targetGroupId) {
+      return;
+    }
+
+    document.querySelectorAll('.meeting-item').forEach(function (item) {
+      var link = item.querySelector('.meeting-item-link');
+      var href = link ? (link.getAttribute("href") || "") : "";
+      if (href.indexOf("selected_id=" + targetGroupId) >= 0) {
+      item.remove();
+      }
+    });
+
+    var treeCount = document.querySelector(".meeting-tree-count");
+    if (treeCount) {
+      var currentItems = document.querySelectorAll(".meeting-item").length;
+      treeCount.textContent = String(currentItems) + " cuộc họp";
+    }
+  }
+
+  function bindMeetingDeleteForms(scope) {
+    var root = scope || document;
+
+    root.querySelectorAll(".js-meeting-delete-form").forEach(function (form) {
+      if (form.dataset.bound === "1") {
+        return;
+      }
+      form.dataset.bound = "1";
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        var ok = window.confirm("Xác nhận xóa cuộc họp này? Dữ liệu trao đổi và tài liệu trong cuộc họp sẽ bị xóa.");
+        if (!ok) {
+          return;
+        }
+
+        fetch(form.getAttribute("action"), {
+          method: "POST",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "Accept": "application/json"
+          }
+        })
+          .then(function (r) {
+            return r.text().then(function (text) {
+              var data = {};
+              try {
+                data = text ? JSON.parse(text) : {};
+              } catch (err) {
+                data = {};
+              }
+              return { ok: r.ok, data: data || {} };
+            });
+          })
+          .then(function (result) {
+            var data = result.data || {};
+            if (!result.ok || data.detail) {
+              window.alert(data.detail || "Không xóa cuộc họp được.");
+              return;
+            }
+
+            removeMeetingItemsByGroupId(data.group_id || form.dataset.groupId || "");
+
+            var selectedDetailRoot = document.querySelector(".meeting-card:nth-child(2)");
+            if (String(data.group_id || "") === String(groupId || "")) {
+              window.location.href = data.redirect_url || "/meetings";
+              return;
+            }
+
+            window.alert("Đã xóa cuộc họp.");
+          })
+          .catch(function () {
+            window.alert("Không xóa cuộc họp được.");
+          });
+      });
+    });
+  }
+
+  function appendMeetingDocument(doc) {
+    var list = document.querySelector(".meeting-doc-list");
+    if (!list || !doc) {
+      return;
+    }
+
+    var empty = list.querySelector(".meeting-note");
+    if (empty) {
+      empty.remove();
+    }
+
+    var wrap = document.createElement("div");
+    wrap.className = "meeting-doc-item";
+
+    var previewUrl = doc.preview_url || doc.path || "#";
+    var downloadUrl = doc.download_url || doc.path || "#";
+
+    var actions = "";
+    if (doc.is_previewable) {
+      actions += '<a class="meeting-btn secondary" href="' + previewUrl + '" target="_blank" rel="noopener">Xem</a>';
+    }
+    actions += '<a class="meeting-btn secondary" href="' + downloadUrl + '">Tải về</a>';
+
+    wrap.innerHTML =
+      '<div class="meeting-doc-title">' + escapeHtml(doc.filename || "Tệp đính kèm") + '</div>' +
+      '<div class="meeting-doc-meta">Tải lên bởi ' + escapeHtml(doc.sender_name || "Người dùng") + ' • ' + escapeHtml(doc.created_at_text || "") + '</div>' +
+      '<div class="meeting-doc-actions">' + actions + '</div>';
+
+    list.prepend(wrap);
+  }
+
+  function getAttendanceRow(userId) {
+    var attendanceList = document.getElementById("meetingAttendanceList");
+    if (!attendanceList || !userId) {
+      return null;
+    }
+    return attendanceList.querySelector('.meeting-attendance-row[data-user-id="' + userId + '"]');
+  }
+
+  function attendanceStatusLabel(status) {
+    var code = String(status || "").trim().toUpperCase();
+    if (code === "ABSENT") return "Báo vắng";
+    if (code === "CHECKED_IN") return "Đã điểm danh";
+    if (code === "LEFT") return "Đã rời họp";
+    return "Chưa phản hồi";
+  }
+
+  function presenceStatusLabel(isOnline) {
+    return isOnline ? "Đang ở phòng" : "Ngoài phòng";
+  }
+
+  function applyAttendancePillClass(el, status) {
+    if (!el) {
+      return;
+    }
+    el.classList.remove("live", "ended");
+
+    var code = String(status || "").trim().toUpperCase();
+    if (code === "CHECKED_IN") {
+      el.classList.add("live");
+    } else if (code === "ABSENT" || code === "LEFT") {
+      el.classList.add("ended");
+    }
+  }
+
+  function setAttendanceRowState(userId, options) {
+    var row = getAttendanceRow(userId);
+    if (!row) {
+      return;
+    }
+
+    var opts = options || {};
+    var presenceLabelEl = row.querySelector(".js-presence-label");
+    var attendanceLabelEl = row.querySelector(".js-attendance-label");
+    var absentReasonEl = row.querySelector(".js-absent-reason");
+
+    if (typeof opts.isOnline !== "undefined") {
+      row.setAttribute("data-presence-status", opts.isOnline ? "ONLINE" : "OFFLINE");
+      if (presenceLabelEl) {
+        presenceLabelEl.textContent = opts.presence_status_label || presenceStatusLabel(!!opts.isOnline);
+      }
+    } else if (opts.presence_status) {
+      var isOnline = String(opts.presence_status || "").trim().toUpperCase() === "ONLINE";
+      row.setAttribute("data-presence-status", isOnline ? "ONLINE" : "OFFLINE");
+      if (presenceLabelEl) {
+        presenceLabelEl.textContent = opts.presence_status_label || presenceStatusLabel(isOnline);
+      }
+    }
+
+    if (opts.attendance_status) {
+      var statusCode = String(opts.attendance_status || "").trim().toUpperCase();
+      row.setAttribute("data-attendance-status", statusCode);
+      if (attendanceLabelEl) {
+        attendanceLabelEl.textContent = opts.attendance_status_label || attendanceStatusLabel(statusCode);
+        applyAttendancePillClass(attendanceLabelEl, statusCode);
+      }
+    }
+
+    if (typeof opts.reason !== "undefined" && absentReasonEl) {
+      var reasonText = String(opts.reason || "").trim();
+      absentReasonEl.textContent = reasonText;
+      absentReasonEl.style.display = reasonText ? "" : "none";
+    }
+  }
+
+  function rebuildPresenceSummary() {
+    if (!meetingPresenceMembers) {
+      return;
+    }
+
+    var attendanceList = document.getElementById("meetingAttendanceList");
+    if (!attendanceList) {
+      return;
+    }
+
+    var names = [];
+    attendanceList.querySelectorAll(".meeting-attendance-row").forEach(function (row) {
+      var presenceStatus = String(row.getAttribute("data-presence-status") || "").trim().toUpperCase();
+      if (presenceStatus !== "ONLINE") {
+        return;
+      }
+
+      var strong = row.querySelector("strong");
+      var name = strong ? (strong.textContent || "").trim() : "";
+      if (name) {
+        names.push(name);
+      }
+    });
+
+    meetingPresenceMembers.textContent = names.length
+      ? names.join(", ")
+      : "Chưa có người nào đang ở trong phòng.";
+  }
+
+  function rebuildAttendanceSummaryCounts() {
+    var root = document.getElementById("meetingAttendanceToggle");
+    var attendanceList = document.getElementById("meetingAttendanceList");
+    if (!root || !attendanceList) {
+      return;
+    }
+
+    var pendingEl = root.querySelector(".meeting-summary-pill.pending");
+    var absentEl = root.querySelector(".meeting-summary-pill.absent");
+    var checkedInEl = root.querySelector(".meeting-summary-pill.checkedin");
+
+    var pendingCount = 0;
+    var absentCount = 0;
+    var checkedInCount = 0;
+
+    attendanceList.querySelectorAll(".meeting-attendance-row").forEach(function (row) {
+      var status = String(row.getAttribute("data-attendance-status") || "PENDING").trim().toUpperCase();
+      if (status === "ABSENT") {
+        absentCount += 1;
+      } else if (status === "CHECKED_IN") {
+        checkedInCount += 1;
+      } else {
+        pendingCount += 1;
+      }
+    });
+
+    if (pendingEl) pendingEl.textContent = "Chưa phản hồi: " + String(pendingCount);
+    if (absentEl) absentEl.textContent = "Báo vắng: " + String(absentCount);
+    if (checkedInEl) checkedInEl.textContent = "Đã điểm danh: " + String(checkedInCount);
+  }
+
+  function removeAttendanceRow(userId) {
+    var row = getAttendanceRow(userId);
+    if (row && row.parentNode) {
+      row.parentNode.removeChild(row);
+    }
+    rebuildAttendanceSummaryCounts();
+    rebuildPresenceSummary();
+  }
+
+  function updateAttendanceSummaryCountsAfterLeave() {
+    rebuildAttendanceSummaryCounts();
+  }
+
+  function removeLeaveRequestRow(leaveRequestId) {
+    if (!meetingLeaveRequestList || !leaveRequestId) {
+      return;
+    }
+
+    var row = meetingLeaveRequestList.querySelector('[data-leave-request-id="' + leaveRequestId + '"]');
+    if (row && row.parentNode) {
+      row.parentNode.removeChild(row);
+    }
+
+    if (!meetingLeaveRequestList.querySelector('[data-leave-request-id]')) {
+      if (!document.getElementById("meetingLeaveRequestEmpty")) {
+        var empty = document.createElement("div");
+        empty.className = "meeting-note";
+        empty.id = "meetingLeaveRequestEmpty";
+        empty.textContent = "Chưa có yêu cầu xin rời cuộc họp.";
+        meetingLeaveRequestList.appendChild(empty);
+      }
+    }
+  }
+
+  function appendLeaveRequest(payload) {
+    if (!meetingLeaveRequestList || !payload || !payload.leave_request_id) {
+      return;
+    }
+
+    if (meetingLeaveRequestList.querySelector('[data-leave-request-id="' + payload.leave_request_id + '"]')) {
+      return;
+    }
+
+    var empty = document.getElementById("meetingLeaveRequestEmpty");
+    if (empty && empty.parentNode) {
+      empty.parentNode.removeChild(empty);
+    }
+
+    var wrap = document.createElement("div");
+    wrap.className = "meeting-speaker-row";
+    wrap.setAttribute("data-leave-request-id", payload.leave_request_id);
+    wrap.setAttribute("data-user-id", payload.user_id);
+
+    wrap.innerHTML =
+      '<div>' +
+        '<strong>' + escapeHtml(payload.user_name || "Người dùng") + '</strong>' +
+        '<div class="meeting-note">Chờ Chủ trì duyệt' + (payload.note ? ' • ' + escapeHtml(payload.note) : '') + '</div>' +
+      '</div>' +
+      '<div class="meeting-actions">' +
+        '<form method="post" action="/meetings/' + groupId + '/leave/' + payload.leave_request_id + '/approve" class="meetingLeaveApproveForm">' +
+          '<button type="submit" class="meeting-btn warn">Chấp thuận rời họp</button>' +
+        '</form>' +
+        '<form method="post" action="/meetings/' + groupId + '/leave/' + payload.leave_request_id + '/reject" class="meetingLeaveRejectForm">' +
+          '<button type="submit" class="meeting-btn secondary">Không chấp thuận</button>' +
+        '</form>' +
+      '</div>';
+
+    meetingLeaveRequestList.appendChild(wrap);
+    bindLeaveActionForms(wrap);
+  }
+  
+  function appendSpeakerRequest(payload) {
+    var list = document.getElementById("meetingSpeakerList");
+    if (!list || !payload || !payload.speaker_request_id) {
+      return;
+    }
+
+    if (list.querySelector('[data-speaker-id="' + payload.speaker_request_id + '"]')) {
+      return;
+    }
+
+    var empty = document.getElementById("meetingSpeakerEmpty");
+    if (empty && empty.parentNode) {
+      empty.parentNode.removeChild(empty);
+    }
+
+    var row = document.createElement("div");
+    row.className = "meeting-speaker-row";
+    row.setAttribute("data-speaker-id", payload.speaker_request_id);
+    row.setAttribute("data-user-id", payload.user_id || "");
+
+    var titleText = (payload.queue_no ? ("#" + String(payload.queue_no) + " ") : "") + (payload.user_name || "Người dùng");
+    var noteText = payload.request_status_label || "Chờ Chủ trì cho phép";
+    if (payload.note) {
+      noteText += " • " + escapeHtml(payload.note);
+    }
+
+    var actionHtml = "";
+    if (isHostView) {
+      actionHtml =
+        '<div class="meeting-actions">' +
+          '<button type="button" class="meeting-btn secondary js-speaker-approve" data-speaker-id="' + payload.speaker_request_id + '">Cho phép</button>' +
+          '<button type="button" class="meeting-btn secondary js-speaker-move" data-direction="up" data-speaker-id="' + payload.speaker_request_id + '">↑</button>' +
+          '<button type="button" class="meeting-btn secondary js-speaker-move" data-direction="down" data-speaker-id="' + payload.speaker_request_id + '">↓</button>' +
+        '</div>';
+    }
+
+    row.innerHTML =
+      '<div>' +
+        '<strong>' + escapeHtml(titleText) + '</strong>' +
+        '<div class="meeting-note">' + noteText + '</div>' +
+      '</div>' +
+      actionHtml;
+
+    list.appendChild(row);
+    bindSpeakerApproveButtons(row);
+    bindSpeakerMoveButtons(row);
+  }
+
+  function bindLeaveActionForms(scope) {
+    var root = scope || document;
+
+    root.querySelectorAll(".meetingLeaveApproveForm").forEach(function (form) {
+      if (form.dataset.bound === "1") return;
+      form.dataset.bound = "1";
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        fetch(form.getAttribute("action"), {
+          method: "POST",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "Accept": "application/json"
+          }
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data && data.detail) {
+              window.alert(data.detail);
+            }
+          })
+          .catch(function () {
+            window.alert("Không chấp thuận rời họp được.");
+          });
+      });
+    });
+
+    root.querySelectorAll(".meetingLeaveRejectForm").forEach(function (form) {
+      if (form.dataset.bound === "1") return;
+      form.dataset.bound = "1";
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        fetch(form.getAttribute("action"), {
+          method: "POST",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "Accept": "application/json"
+          }
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data && data.detail) {
+              window.alert(data.detail);
+            }
+          })
+          .catch(function () {
+            window.alert("Không từ chối được yêu cầu rời họp.");
+          });
+      });
+    });
+  }
+
+  if (sendForm) {
+    sendForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      var textarea = meetingMessageTextarea || sendForm.querySelector('textarea[name="content"]');
+      var button = sendForm.querySelector('button[type="submit"]');
+
+      if (button && button.disabled) {
+        window.alert("Bạn chỉ được gửi nội dung phát biểu sau khi được Chủ trì cho phép.");
+        return;
+      }
+
+      var currentText = textarea ? (textarea.value || "").trim() : "";
+      if (!currentText) {
+        window.alert("Nội dung tin nhắn không được để trống.");
+        return;
+      }
+
+      var formData = new FormData(sendForm);
+      fetch("/meetings/" + groupId + "/messages/send", {
+        method: "POST",
+        body: formData,
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Accept": "application/json"
+        }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && data.message) {
+            sendForm.reset();
+            clearMeetingDraft();
+            appendMessage(data.message);
+
+            if (typeof data.can_send_meeting_message !== "undefined") {
+              setMeetingSendState(!!data.can_send_meeting_message);
+              setSpeakState(!data.can_send_meeting_message);
+            }
+          } else if (data && data.detail) {
+            window.alert(data.detail);
+          }
+        })
+        .catch(function () {
+          window.alert("Không gửi được tin nhắn.");
+        });
+    });
+  }
+
+  if (meetingDocumentUploadForm) {
+    meetingDocumentUploadForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      var disabledInput = meetingDocumentUploadForm.querySelector('input[type="file"][disabled]');
+      var disabledButton = meetingDocumentUploadForm.querySelector("button[disabled]");
+      if (disabledInput || disabledButton) {
+        window.alert("Chỉ Chủ trì hoặc Thư ký mới được tải tài liệu phục vụ cuộc họp.");
+        return;
+      }
+
+      var formData = new FormData(meetingDocumentUploadForm);
+      fetch("/meetings/" + groupId + "/documents/upload", {
+        method: "POST",
+        body: formData,
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Accept": "application/json"
+        }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && data.detail) {
+            window.alert(data.detail);
+            return;
+          }
+          meetingDocumentUploadForm.reset();
+          if (data && data.document) {
+            appendMeetingDocument(data.document);
+          }
+        })
+        .catch(function () {
+          window.alert("Không tải được tài liệu phục vụ cuộc họp.");
+        });
+    });
+  }
+
+  if (meetingChatUploadForm) {
+    meetingChatUploadForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      var formData = new FormData(meetingChatUploadForm);
+      fetch("/chat/api/messages/upload", {
+        method: "POST",
+        body: formData,
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Accept": "application/json"
+        }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && data.detail) {
+            window.alert(data.detail);
+            return;
+          }
+          meetingChatUploadForm.reset();
+          if (data && data.message) {
+            appendMeetingChatMessage(data.message);
+          }
+        })
+        .catch(function () {
+          window.alert("Không tải được file trao đổi.");
+        });
+    });
+  }
+
+  if (absentBtn) {
+    absentBtn.addEventListener("click", function () {
+      var reason = window.prompt("Nhập lý do báo vắng:", "");
+      if (reason === null) {
+        return;
+      }
+
+      fetch("/meetings/" + groupId + "/absent", {
+        method: "POST",
+        body: new URLSearchParams({ reason: reason || "" }),
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-Requested-With": "XMLHttpRequest",
+          "Accept": "application/json"
+        }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && data.detail) {
+            window.alert(data.detail);
+            return;
+          }
+
+          setAttendanceRowState(currentUserId, {
+            isOnline: false,
+            presence_status_label: data.presence_status_label || "Ngoài phòng",
+            attendance_status: data.attendance_status || "ABSENT",
+            attendance_status_label: data.attendance_status_label || "Báo vắng",
+            reason: data.reason || ""
+          });
+          rebuildPresenceSummary();
+          rebuildAttendanceSummaryCounts();
+
+          toggleAbsentButtons(true);
+          updateMeetingActionHint("Bạn đã báo vắng. Có thể hủy báo vắng trước giờ họp.");
+          window.alert("Đã báo vắng thành công.");
+
+          if (String(data.user_id || "") === String(currentUserId || "") && data.removed_from_meeting) {
+            window.location.href = "/meetings";
+          }
+        })
+        .catch(function () {
+          window.alert("Không báo vắng được.");
+        });
+    });
+  }
+
+  if (cancelAbsentBtn) {
+    cancelAbsentBtn.addEventListener("click", function () {
+      fetch("/meetings/" + groupId + "/absent/cancel", {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Accept": "application/json"
+        }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && data.detail) {
+            window.alert(data.detail);
+            return;
+          }
+
+          setAttendanceRowState(currentUserId, {
+            isOnline: false,
+            presence_status_label: data.presence_status_label || "Ngoài phòng",
+            attendance_status: data.attendance_status || "PENDING",
+            attendance_status_label: data.attendance_status_label || "Chưa phản hồi",
+            reason: ""
+          });
+          rebuildPresenceSummary();
+          rebuildAttendanceSummaryCounts();
+
+          toggleAbsentButtons(false);
+          updateMeetingActionHint("Trước giờ họp, người dự họp có thể báo vắng.");
+          window.alert("Đã hủy báo vắng.");
+        })
+        .catch(function () {
+          window.alert("Không hủy báo vắng được.");
+        });
+    });
+  }
+
+  if (checkinBtn) {
+    checkinBtn.addEventListener("click", function () {
+      fetch("/meetings/" + groupId + "/checkin", {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Accept": "application/json"
+        }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && data.detail) {
+            window.alert(data.detail);
+            return;
+          }
+
+          setAttendanceRowState(currentUserId, {
+            isOnline: true,
+            presence_status_label: data.presence_status_label || "Đang ở phòng",
+            attendance_status: data.attendance_status || "CHECKED_IN",
+            attendance_status_label: data.attendance_status_label || "Đã điểm danh",
+            reason: ""
+          });
+          rebuildPresenceSummary();
+          rebuildAttendanceSummaryCounts();
+
+          markCheckinDone();
+          updateSendSpeakButtons(data.can_send_meeting_message, data.can_register_speaker);
+
+          if (meetingSendHint) {
+            if (data.can_send_meeting_message) {
+              meetingSendHint.textContent = "Anh/chị đã điểm danh và có thể gửi tin ngay.";
+            } else {
+              meetingSendHint.textContent = "Anh/chị đã điểm danh. Nếu muốn phát biểu, bấm Đăng ký phát biểu để chờ Chủ trì cho phép.";
+            }
+          }
+
+          updateMeetingActionHint("Anh/chị đã điểm danh thành công.");
+          window.alert("Điểm danh thành công.");
+        })
+        .catch(function () {
+          window.alert("Không điểm danh được.");
+        });
+    });
+  }
+
+  if (endNowForm) {
+    endNowForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      var ok = window.confirm("Xác nhận kết thúc ngay cuộc họp này?");
+      if (!ok) {
+        return;
+      }
+
+      fetch(endNowForm.getAttribute("action"), {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Accept": "application/json"
+        }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && data.detail) {
+            window.alert(data.detail);
+            return;
+          }
+        })
+        .catch(function () {
+          window.alert("Không kết thúc cuộc họp được.");
+        });
+    });
+  }
+
+  if (speakBtn) {
+    speakBtn.addEventListener("click", function () {
+      if (speakBtn.disabled) {
+        window.alert("Bạn không thể đăng ký phát biểu ở trạng thái hiện tại.");
+        return;
+      }
+
+      var note = window.prompt("Nhập ghi chú ý kiến (nếu có):", "");
+      if (note === null) {
+        return;
+      }
+
+      fetch("/meetings/" + groupId + "/speaker/request", {
+        method: "POST",
+        body: new URLSearchParams({ note: note || "" }),
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-Requested-With": "XMLHttpRequest",
+          "Accept": "application/json"
+        }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && data.detail) {
+            window.alert(data.detail);
+            return;
+          }
+
+          writeMeetingDraft(meetingMessageTextarea ? (meetingMessageTextarea.value || "") : "");
+          setSpeakState(false);
+          if (meetingSendHint) {
+            meetingSendHint.textContent = "Đã đăng ký phát biểu. Anh/Chị tiếp tục giữ nguyên nội dung đã gõ; khi Chủ trì cho phép thì bấm Gửi tin.";
+          }
+          window.alert("Đã đăng ký phát biểu.");
+        })
+        .catch(function () {
+          window.alert("Không đăng ký phát biểu được.");
+        });
+    });
+  }
+
+  if (meetingLeaveRequestForm) {
+    meetingLeaveRequestForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      var formData = new FormData(meetingLeaveRequestForm);
+      fetch(meetingLeaveRequestForm.getAttribute("action"), {
+        method: "POST",
+        body: formData,
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Accept": "application/json"
+        }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data && data.detail) {
+            window.alert(data.detail);
+            return;
+          }
+
+          meetingLeaveRequestForm.reset();
+          var oldHint = document.getElementById("meetingLeavePendingHint");
+          if (!oldHint) {
+            var hint = document.createElement("div");
+            hint.className = "meeting-note";
+            hint.id = "meetingLeavePendingHint";
+            hint.style.marginTop = "10px";
+            hint.style.color = "#92400e";
+            hint.textContent = "Bạn đã gửi yêu cầu xin rời họp và đang chờ Chủ trì duyệt.";
+            meetingLeaveRequestForm.parentNode.appendChild(hint);
+          }
+          meetingLeaveRequestForm.style.display = "none";
+        })
+        .catch(function () {
+          window.alert("Không gửi được yêu cầu xin rời họp.");
+        });
+    });
+  }
+
+  function bindSpeakerApproveButtons(scope) {
+    var root = scope || document;
+
+    root.querySelectorAll(".js-speaker-approve").forEach(function (btn) {
+      if (btn.dataset.bound === "1") {
+        return;
+      }
+      btn.dataset.bound = "1";
+
+      btn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        fetch("/meetings/" + groupId + "/speaker/" + btn.dataset.speakerId + "/approve", {
+          method: "POST",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "Accept": "application/json"
+          }
+        })
+          .then(function (r) {
+            return r.text().then(function (text) {
+              var data = {};
+              try {
+                data = text ? JSON.parse(text) : {};
+              } catch (err) {
+                data = { raw_text: text || "" };
+              }
+              return { ok: r.ok, data: data };
+            });
+          })
+          .then(function (result) {
+            var data = result.data || {};
+
+            if (!result.ok) {
+              window.alert(data.detail || data.raw_text || "Không cho phép phát biểu được.");
+              return;
+            }
+
+            if (data && data.detail) {
+              window.alert(data.detail);
+              return;
+            }
+
+            var speakerRow = btn.closest("[data-speaker-id]");
+            if (speakerRow) {
+              var noteEl = speakerRow.querySelector(".meeting-note");
+              if (noteEl) {
+                noteEl.textContent = "Đã được Chủ trì cho phép phát biểu";
+              }
+              btn.disabled = true;
+              btn.textContent = "Đã cho phép";
+            }
+
+            window.alert("Đã cho phép phát biểu.");
+            syncMeetingState();
+          })
+          .catch(function () {
+            window.alert("Không cho phép phát biểu được.");
+          });
+      });
+    });
+  }
+
+  function bindSpeakerMoveButtons(scope) {
+    var root = scope || document;
+
+    root.querySelectorAll(".js-speaker-move").forEach(function (btn) {
+      if (btn.dataset.bound === "1") {
+        return;
+      }
+      btn.dataset.bound = "1";
+
+      btn.addEventListener("click", function () {
+        fetch("/meetings/" + groupId + "/speaker/" + btn.dataset.speakerId + "/move", {
+          method: "POST",
+          body: new URLSearchParams({ direction: btn.dataset.direction }),
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Requested-With": "XMLHttpRequest",
+            "Accept": "application/json"
+          }
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data && data.detail) {
+              window.alert(data.detail);
+            }
+          })
+          .catch(function () {
+            window.alert("Không đổi được thứ tự phát biểu.");
+          });
+      });
+    });
+  }
+
+  try {
+    var ws = new WebSocket(wsBase() + "/ws/chat/groups/" + groupId);
+
+    ws.onmessage = function (event) {
+      try {
+        var payload = JSON.parse(event.data || "{}");
+
+        if (payload.type === "new_message" && payload.message) {
+          appendMessage(payload.message);
+          if (typeof payload.can_send_meeting_message !== "undefined") {
+            setMeetingSendState(!!payload.can_send_meeting_message);
+            setSpeakState(!payload.can_send_meeting_message);
+          }
+          return;
+        }
+
+        if (payload.type === "meeting_status_sync") {
+          return;
+        }
+
+        if (payload.type === "meeting_schedule_updated") {
+          if (meetingStatusLabel && payload.meeting_status_label) {
+            meetingStatusLabel.textContent = payload.meeting_status_label;
+          }
+
+          if (typeof payload.meeting_status !== "undefined") {
+            meetingStatusRaw = payload.meeting_status || meetingStatusRaw;
+          }
+          if (typeof payload.scheduled_start_value !== "undefined") {
+            scheduledStartValue = payload.scheduled_start_value || "";
+          }
+          if (typeof payload.scheduled_end_value !== "undefined") {
+            scheduledEndValue = payload.scheduled_end_value || "";
+          }
+
+          updateMeetingScheduleText(payload.scheduled_start_text || "—", payload.scheduled_end_text || "");
+
+          var startInput = document.querySelector('form[action="/meetings/' + groupId + '/schedule"] input[name="scheduled_start_at"]');
+          var endInput = document.querySelector('form[action="/meetings/' + groupId + '/schedule"] input[name="scheduled_end_at"]');
+
+          if (startInput && typeof payload.scheduled_start_value !== "undefined") {
+            startInput.value = payload.scheduled_start_value || "";
+          }
+          if (endInput && typeof payload.scheduled_end_value !== "undefined") {
+            endInput.value = payload.scheduled_end_value || "";
+          }
+
+          scheduleMeetingStatusTimers();
+          syncMeetingState();
+          return;
+        }
+
+        if (payload.type === "meeting_presence_joined") {
+          setAttendanceRowState(payload.user_id, {
+            isOnline: true,
+            presence_status_label: payload.presence_status_label || "Đang ở phòng",
+            attendance_status: payload.attendance_status || null,
+            attendance_status_label: payload.attendance_status_label || null
+          });
+          rebuildPresenceSummary();
+          rebuildAttendanceSummaryCounts();
+
+          if (payload.action_mode && payload.meeting_status_label) {
+            updateMeetingActionMode(
+              payload.action_mode,
+              payload.meeting_status_label,
+              payload.attendance_status || "",
+              false,
+              false
+            );
+          }
+          return;
+        }
+
+        if (payload.type === "meeting_presence_left") {
+          setAttendanceRowState(payload.user_id, {
+            isOnline: false,
+            presence_status_label: payload.presence_status_label || "Ngoài phòng"
+          });
+          rebuildPresenceSummary();
+          rebuildAttendanceSummaryCounts();
+          return;
+        }
+
+        if (payload.type === "meeting_speaker_requested") {
+          if (String(payload.user_id || "") === String(currentUserId || "")) {
+            writeMeetingDraft(meetingMessageTextarea ? (meetingMessageTextarea.value || "") : "");
+            setSpeakState(false);
+            if (meetingSendHint) {
+              meetingSendHint.textContent = "Đã đăng ký phát biểu. Anh/Chị tiếp tục giữ nguyên nội dung đã gõ; khi Chủ trì cho phép thì bấm Gửi tin.";
+            }
+          }
+
+          appendSpeakerRequest(payload);
+          return;
+        }
+
+        if (payload.type === "meeting_speaker_approved") {
+          var approvedRow = document.querySelector('[data-speaker-id="' + (payload.speaker_request_id || "") + '"]');
+          if (approvedRow) {
+            var noteEl = approvedRow.querySelector(".meeting-note");
+            if (noteEl) {
+              noteEl.textContent = payload.request_status_label || "Đã được Chủ trì cho phép phát biểu";
+            }
+            var approveBtn = approvedRow.querySelector(".js-speaker-approve");
+            if (approveBtn) {
+              approveBtn.disabled = true;
+              approveBtn.textContent = "Đã cho phép";
+            }
+          }
+
+          if (String(payload.user_id || "") === String(currentUserId || "")) {
+            setMeetingSendState(!!payload.can_send_meeting_message);
+            setSpeakState(!!payload.can_register_speaker);
+            if (meetingSendHint) {
+              meetingSendHint.textContent = "Chủ trì đã cho phép phát biểu. Anh/Chị hãy bấm nút Gửi tin ngay.";
+            }
+          }
+          return;
+        }
+
+        if (payload.type === "meeting_leave_requested") {
+          appendLeaveRequest(payload);
+          return;
+        }
+
+        if (payload.type === "meeting_leave_rejected") {
+          removeLeaveRequestRow(payload.leave_request_id);
+
+          if (String(payload.user_id || "") === String(currentUserId || "")) {
+            var pendingHint = document.getElementById("meetingLeavePendingHint");
+            if (pendingHint && pendingHint.parentNode) {
+              pendingHint.parentNode.removeChild(pendingHint);
+            }
+            if (meetingLeaveRequestForm) {
+              meetingLeaveRequestForm.style.display = "";
+            }
+            window.alert("Chủ trì không chấp thuận yêu cầu rời họp.");
+          }
+          return;
+        }
+
+        if (payload.type === "meeting_leave_approved") {
+          removeLeaveRequestRow(payload.leave_request_id);
+          removeAttendanceRow(payload.user_id);
+          rebuildPresenceSummary();
+          updateAttendanceSummaryCountsAfterLeave();
+
+          if (String(payload.user_id || "") === String(currentUserId || "")) {
+            window.alert("Chủ trì đã chấp thuận. Anh/chị đã được đưa ra khỏi cuộc họp.");
+            window.location.href = "/meetings";
+          }
+          return;
+        }
+
+        if (payload.type === "meeting_host_updated") {
+          if (payload.host_user_name) {
+            setText("meetingHostName", payload.host_user_name);
+          }
+          return;
+        }
+
+        if (payload.type === "meeting_secretary_updated") {
+          setText("meetingSecretaryName", payload.secretary_user_name || "Chưa chỉ định");
+          return;
+        }
+
+        if (payload.type === "meeting_absent_reported") {
+          if (payload.user_id) {
+            setAttendanceRowState(payload.user_id, {
+              isOnline: false,
+              presence_status_label: payload.presence_status_label || "Ngoài phòng",
+              attendance_status: payload.attendance_status || "ABSENT",
+              attendance_status_label: payload.attendance_status_label || "Báo vắng",
+              reason: payload.reason || ""
+            });
+            rebuildPresenceSummary();
+            rebuildAttendanceSummaryCounts();
+          }
+
+          if (String(payload.user_id || "") === String(currentUserId || "") && payload.removed_from_meeting) {
+            window.alert("Anh/chị đã báo vắng và đã bị đưa ra khỏi cuộc họp.");
+            window.location.href = "/meetings";
+            return;
+          }
+
+          if (payload.host_user_name) {
+            setText("meetingHostName", payload.host_user_name);
+          }
+
+          if (String(payload.user_id || "") === String(currentUserId || "")) {
+            toggleAbsentButtons(true);
+            updateMeetingActionHint("Bạn đã báo vắng. Có thể hủy báo vắng trước giờ họp.");
+          }
+          return;
+        }
+
+        if (payload.type === "meeting_absent_cancelled") {
+          if (payload.user_id) {
+            setAttendanceRowState(payload.user_id, {
+              isOnline: false,
+              presence_status_label: payload.presence_status_label || "Ngoài phòng",
+              attendance_status: payload.attendance_status || "PENDING",
+              attendance_status_label: payload.attendance_status_label || "Chưa phản hồi",
+              reason: ""
+            });
+            rebuildPresenceSummary();
+            rebuildAttendanceSummaryCounts();
+          }
+
+          if (String(payload.user_id || "") === String(currentUserId || "")) {
+            toggleAbsentButtons(false);
+            updateMeetingActionHint("Trước giờ họp, người dự họp có thể báo vắng.");
+          }
+          return;
+        }
+
+        if (payload.type === "meeting_checkin_done") {
+          if (payload.user_id) {
+            setAttendanceRowState(payload.user_id, {
+              isOnline: true,
+              presence_status_label: payload.presence_status_label || "Đang ở phòng",
+              attendance_status: payload.attendance_status || "CHECKED_IN",
+              attendance_status_label: payload.attendance_status_label || "Đã điểm danh",
+              reason: ""
+            });
+            rebuildPresenceSummary();
+            rebuildAttendanceSummaryCounts();
+          }
+
+          if (String(payload.user_id || "") === String(currentUserId || "")) {
+            markCheckinDone();
+            updateSendSpeakButtons(payload.can_send_meeting_message, payload.can_register_speaker);
+
+            if (meetingSendHint) {
+              if (payload.can_send_meeting_message) {
+                meetingSendHint.textContent = "Anh/chị đã điểm danh và có thể chuẩn bị nội dung phát biểu vào ô Nội dung trao đổi.";
+              } else {
+                meetingSendHint.textContent = "Anh/chị đã soạn xong nội dung. Nếu muốn phát biểu, bấm Đăng ký phát biểu để chờ Chủ trì cho phép.";
+              }
+            }
+
+            updateMeetingActionHint("Anh/chị đã điểm danh thành công.");
+          }
+          return;
+        }
+
+        if (payload.type === "meeting_deleted") {
+          removeMeetingItemsByGroupId(payload.group_id || "");
+
+          if (String(payload.group_id || "") === String(groupId || "")) {
+            window.alert("Cuộc họp này đã bị xóa.");
+            window.location.href = payload.redirect_url || "/meetings";
+            return;
+          }
+
+          return;
+        }
+
+        if (payload.type === "meeting_speaker_reordered") {
+          syncMeetingState();
+          return;
+        }
+      } catch (err) {
+        console.error("meeting websocket parse error:", err);
+      }
+    };
+  } catch (err) {
+    console.error("meeting websocket init error:", err);
+  }
+
+  bindLeaveActionForms(document);
+  bindMeetingDeleteForms(document);
+  bindSpeakerApproveButtons(document);
+  bindSpeakerMoveButtons(document);
+  initAttendanceCollapse();
+  bindMeetingDraftPersistence();
+  joinPresence();
+  scheduleMeetingStatusTimers();
+  syncMeetingState();
+  rebuildPresenceSummary();
+  rebuildAttendanceSummaryCounts();
+
+  window.addEventListener("visibilitychange", function () {
+    if (!document.hidden) {
+      syncMeetingState();
+    }
+  });
+
+  window.addEventListener("beforeunload", function () {
+    leavePresence();
+    clearMeetingStatusTimers();
+  });
+})();
+</script>
+{% endif %}{% endblock %}

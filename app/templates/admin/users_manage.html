@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Quản trị người dùng</h2>
+  <p>Chỉ Admin/Lãnh đạo được thao tác. Tài khoản mới đăng ký ở trạng thái <b>chờ kích hoạt</b>.</p>
+
+  <script>
+    // Chống bấm lặp & confirm
+    function confirmAndDisable(btn, msg) {
+      if (!confirm(msg)) return false;
+      btn.disabled = true;
+      btn.closest("form").submit();
+      return false;
+    }
+  </script>
+
+  <!-- ========== CHỜ KÍCH HOẠT ========== -->
+  <h3 style="margin-top:16px;">Chờ kích hoạt</h3>
+  <table class="table">
+    <thead><tr><th>Họ tên</th><th>Tên đăng nhập</th><th>Email</th><th>Điện thoại</th><th>Hành động</th></tr></thead>
+    <tbody>
+      {% for u in pending %}
+      <tr>
+        <td>{{ u.full_name or "-" }}</td>
+        <td>{{ u.username }}</td>
+        <td>{{ u.email or "-" }}</td>
+        <td>{{ u.phone or "-" }}</td>
+        <td>
+          <a href="/admin/users/edit?user_id={{ u.id }}" class="button">Sửa</a>
+
+          <form method="post" action="/admin/users/activate" style="display:inline; margin-left:6px;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <button type="submit" onclick="return confirmAndDisable(this,'Kích hoạt tài khoản này?')">Kích hoạt</button>
+          </form>
+
+          <form method="post" action="/admin/users/lock" style="display:inline; margin-left:6px;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <button type="submit" style="background:#DC2626;"
+              onclick="return confirmAndDisable(this,'Khoá tài khoản này?')">Khoá</button>
+          </form>
+
+          <form method="post" action="/admin/users/delete" style="display:inline; margin-left:6px;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <button type="submit" style="background:#6B7280;"
+              onclick="return confirmAndDisable(this,'Xoá tài khoản này? Hành động không thể hoàn tác!')">Xóa</button>
+          </form>
+
+          <!-- Điều chỉnh vị trí -->
+          <form method="post" action="/admin/users/position" style="display:block; margin-top:6px;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <select name="new_role" required>
+              <option value="LANH_DAO">Hội đồng thành viên / Lãnh đạo</option>
+              <option value="TRUONG_PHONG">Trưởng phòng</option>
+              <option value="PHO_PHONG">Phó phòng</option>
+              <option value="TO_TRUONG">Tổ trưởng</option>
+              <option value="PHO_TO">Tổ phó</option>
+              <option value="NHAN_VIEN">Nhân viên</option>
+            </select>
+            <button type="submit" onclick="return confirmAndDisable(this,'Cập nhật vị trí người dùng?')">Cập nhật vị trí</button>
+          </form>
+
+          <!-- Điều chuyển đơn vị -->
+          <form method="post" action="/admin/users/unit-transfer" style="display:block; margin-top:6px;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            {% if all_units %}
+            <select name="new_unit_id" required>
+              {% for un in all_units %}
+                <option value="{{ un.id }}">{{ un.ten_don_vi }} (cấp {{ un.cap_do }})</option>
+              {% endfor %}
+            </select>
+            {% else %}
+              <span style="color:#6B7280;">Chưa có dữ liệu đơn vị</span>
+            {% endif %}
+            <button type="submit" onclick="return confirmAndDisable(this,'Điều chuyển đơn vị cho người dùng?')">Điều chuyển đơn vị</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if pending|length == 0 %}
+      <tr><td colspan="5" style="text-align:center;color:#6B7280;">Không có tài khoản chờ duyệt</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <!-- ========== ĐANG HOẠT ĐỘNG ========== -->
+  <h3 style="margin-top:16px;">Đang hoạt động</h3>
+  <table class="table">
+    <thead><tr><th>Họ tên</th><th>Tên đăng nhập</th><th>Email</th><th>Điện thoại</th><th>Hành động</th></tr></thead>
+    <tbody>
+      {% for u in actives %}
+      <tr>
+        <td>{{ u.full_name or "-" }}</td>
+        <td>{{ u.username }}</td>
+        <td>{{ u.email or "-" }}</td>
+        <td>{{ u.phone or "-" }}</td>
+        <td>
+          <a href="/admin/users/edit?user_id={{ u.id }}" class="button">Sửa</a>
+
+          <form method="post" action="/admin/users/lock" style="display:inline; margin-left:6px;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <button type="submit" style="background:#DC2626;"
+              onclick="return confirmAndDisable(this,'Khoá tài khoản này?')">Khoá</button>
+          </form>
+
+          <form method="post" action="/admin/users/delete" style="display:inline; margin-left:6px;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <button type="submit" style="background:#6B7280;"
+              onclick="return confirmAndDisable(this,'Xoá tài khoản này? Hành động không thể hoàn tác!')">Xóa</button>
+          </form>
+
+          <!-- Điều chỉnh vị trí -->
+          <form method="post" action="/admin/users/position" style="display:block; margin-top:6px;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <select name="new_role" required>
+              <option value="LANH_DAO">Hội đồng thành viên / Lãnh đạo</option>
+              <option value="TRUONG_PHONG">Quản lý phòng</option>
+              <option value="TO_TRUONG">Quản lý tổ</option>
+              <option value="NHAN_VIEN">Nhân viên</option>
+            </select>
+            <button type="submit" onclick="return confirmAndDisable(this,'Cập nhật vị trí người dùng?')">Cập nhật vị trí</button>
+          </form>
+
+          <!-- Điều chuyển đơn vị -->
+          <form method="post" action="/admin/users/unit-transfer" style="display:block; margin-top:6px;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            {% if all_units %}
+            <select name="new_unit_id" required>
+              {% for un in all_units %}
+                <option value="{{ un.id }}">{{ un.ten_don_vi }} (cấp {{ un.cap_do }})</option>
+              {% endfor %}
+            </select>
+            {% else %}
+              <span style="color:#6B7280;">Chưa có dữ liệu đơn vị</span>
+            {% endif %}
+            <button type="submit" onclick="return confirmAndDisable(this,'Điều chuyển đơn vị cho người dùng?')">Điều chuyển đơn vị</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if actives|length == 0 %}
+      <tr><td colspan="5" style="text-align:center;color:#6B7280;">Không có tài khoản đang hoạt động</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <!-- ========== ĐÃ KHOÁ ========== -->
+  <h3 style="margin-top:16px;">Đã khoá</h3>
+  <table class="table">
+    <thead><tr><th>Họ tên</th><th>Tên đăng nhập</th><th>Email</th><th>Điện thoại</th><th>Hành động</th></tr></thead>
+    <tbody>
+      {% for u in locked %}
+      <tr>
+        <td>{{ u.full_name or "-" }}</td>
+        <td>{{ u.username }}</td>
+        <td>{{ u.email or "-" }}</td>
+        <td>{{ u.phone or "-" }}</td>
+        <td>
+          <a href="/admin/users/edit?user_id={{ u.id }}" class="button">Sửa</a>
+
+          <form method="post" action="/admin/users/unlock" style="display:inline; margin-left:6px;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <button type="submit" onclick="return confirmAndDisable(this,'Mở khoá tài khoản này?')">Mở</button>
+          </form>
+
+          <form method="post" action="/admin/users/delete" style="display:inline; margin-left:6px;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <button type="submit" style="background:#6B7280;"
+              onclick="return confirmAndDisable(this,'Xoá tài khoản này? Hành động không thể hoàn tác!')">Xóa</button>
+          </form>
+
+          <!-- Điều chỉnh vị trí -->
+          <form method="post" action="/admin/users/position" style="display:block; margin-top:6px;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <select name="new_role" required>
+              <option value="LANH_DAO">Hội đồng thành viên / Lãnh đạo</option>
+              <option value="TRUONG_PHONG">Quản lý phòng</option>
+              <option value="TO_TRUONG">Quản lý tổ</option>
+              <option value="NHAN_VIEN">Nhân viên</option>
+            </select>
+            <button type="submit" onclick="return confirmAndDisable(this,'Cập nhật vị trí người dùng?')">Cập nhật vị trí</button>
+          </form>
+
+          <!-- Điều chuyển đơn vị -->
+          <form method="post" action="/admin/users/unit-transfer" style="display:block; margin-top:6px;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            {% if all_units %}
+            <select name="new_unit_id" required>
+              {% for un in all_units %}
+                <option value="{{ un.id }}">{{ un.ten_don_vi }} (cấp {{ un.cap_do }})</option>
+              {% endfor %}
+            </select>
+            {% else %}
+              <span style="color:#6B7280;">Chưa có dữ liệu đơn vị</span>
+            {% endif %}
+            <button type="submit" onclick="return confirmAndDisable(this,'Điều chuyển đơn vị cho người dùng?')">Điều chuyển đơn vị</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if locked|length == 0 %}
+      <tr><td colspan="5" style="text-align:center;color:#6B7280;">Không có tài khoản bị khoá</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

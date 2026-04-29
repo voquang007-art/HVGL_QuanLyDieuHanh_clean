@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ app_name }} - Đăng nhập</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="login-page">
+  <div class="hero-banner">
+    <div class="line1">CÔNG TY TNHH BỆNH VIỆN HÙNG VƯƠNG GIA LAI</div>
+  </div>
+
+  <div class="center-wrap">
+    <div class="panel">
+      <img src="/static/images/logo.png" class="logo" alt="Logo">
+      <div class="brand-mini">{{ company_name }}</div>
+      <h1>{{ app_name }}</h1>
+
+      {% if error %}<div class="alert">{{ error }}</div>{% endif %}
+      {% if msg %}<div class="alert success">{{ msg }}</div>{% endif %}
+
+      <!-- Chuẩn hóa action trỏ đúng /auth/login -->
+      <form method="post" action="/auth/login">
+        <label>Tên đăng nhập</label>
+        <input type="text" name="username" required>
+        <label>Mật khẩu</label>
+        <div class="input-group">
+          <input id="login_password" type="password" name="password" required>
+          <button type="button" class="eye-btn" onclick="togglePwd('login_password')" aria-label="Ẩn/hiện mật khẩu">
+            <svg class="eye-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+            </svg>
+          </button>
+        </div>
+        <button type="submit">Đăng nhập</button>
+      </form>
+
+      <div class="links">
+        <!-- Chuẩn hóa link đăng ký trỏ đúng /auth/register -->
+        <a href="/auth/register"><span class="register-prefix">Nếu bạn chưa có tài khoản:</span> <span class="register-highlight">ĐĂNG KÝ</span></a>
+      </div>
+      <div class="sign-credit">Ứng dụng được phát triển bởi Võ Như Minh Quang</div>
+    </div>
+  </div>
+
+  <script>
+    function togglePwd(id){
+      const inp=document.getElementById(id);
+      if(!inp) return;
+      inp.type = (inp.type==='password') ? 'text' : 'password';
+    }
+  </script>
+</body>
+</html>

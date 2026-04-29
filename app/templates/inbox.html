@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+{% block title %}Nhận việc{% endblock %}
+
+{% block content %}
+<div class="container inbox-page">
+  <div class="page-head">
+    <h2 class="page-title">Nhận việc</h2>
+  </div>
+
+  {% set list = items or [] %}
+  {% if list|length == 0 %}
+    <p><em>Hiện chưa có công việc nào cần xử lý.</em></p>
+  {% else %}
+    <table class="table inbox-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Tiêu đề</th>
+          <th>Phạm vi</th>
+          <th>Nội dung</th>
+          <th>Thời gian nhận</th>
+          <th>Hạn hoàn thành</th>
+          <th>Báo cáo / Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in list %}
+        <tr>
+          <td class="cell-tight">{{ loop.index }}</td>
+          <td class="cell-tight"><strong>{{ t.title }}</strong></td>
+          <td class="cell-tight">
+            <strong>{{ t._scope_label if t._scope_label is defined else 'Đơn vị' }}</strong>
+            {% if t._scope_name is defined and t._scope_name %}
+              <div class="text-muted">{{ t._scope_name }}</div>
+            {% endif %}
+          </td>
+          <td class="cell-content">
+            {{ t.content or t.description or t.noi_dung or t.mo_ta or "" }}
+          </td>
+          <td class="cell-tight">
+            {% if t.assigned_at %}
+              {% if t.assigned_at.strftime is defined %}
+                {{ t.assigned_at|format_vn_dt }}
+              {% else %}
+                {{ t.assigned_at }}
+              {% endif %}
+            {% elif t.created_at %}
+              {% if t.created_at.strftime is defined %}
+                {{ t.created_at|format_vn_dt }}
+              {% else %}
+                {{ t.created_at }}
+              {% endif %}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td class="cell-deadline">
+            {% set css = "text-danger-strong" if (t.overdue or t.due_soon) else "" %}
+            <span class="{{ css }}">
+              {% if t.due_date %}
+                {% if t.due_date.strftime is defined %}
+                  {{ t.due_date|format_vn_dt }}
+                {% else %}
+                  {{ t.due_date }}
+                {% endif %}
+              {% else %}
+                —
+              {% endif %}
+            </span>
+            {% if t.overdue %}
+              <span class="text-danger-strong">— Đã trễ hạn</span>
+            {% endif %}
+          </td>
+          <td class="cell-actions">
+
+            {# ==== BỔ SUNG: Hiển thị ghi chú gần nhất + tệp đính kèm (nếu có) ==== #}
+            {% if t._latest_report_note is defined and t._latest_report_note %}
+              <div class="report-snippet">
+                <span class="meta-label">Ghi chú gần nhất:</span>
+                <span>{{ t._latest_report_note }}</span>
+              </div>
+            {% endif %}
+
+            {% if t._files is defined and t._files and (t._files|length > 0) %}
+              <div class="file-strip">
+                <span class="file-strip-icon">📎</span>
+                {% for f in t._files[:3] %}
+                  {% set _name = f.name or (f.original_name if f.original_name is defined) or 'tệp' %}
+                  {% set _preview_url = (f.preview_url if f.preview_url is defined and f.preview_url else (('/work-files/' ~ f.id ~ '/preview') if f.id is defined and f.id else '')) %}
+                  {% set _download_url = (f.download_url if f.download_url is defined and f.download_url else (('/work-files/' ~ f.id ~ '/download') if f.id is defined and f.id else '')) %}
+                  {% if _preview_url %}
+                    <span class="file-chip">{{ _name }}</span>
+                    <a href="{{ _preview_url }}" target="_blank" class="file-chip">Xem</a>
+                    {% if _download_url %}<a href="{{ _download_url }}" class="file-chip">Tải</a>{% endif %}
+                    {% if f.id is defined and f.id %}
+                      <form method="post" action="/work-files/{{ f.id }}/delete" style="display:inline;" onsubmit="return confirm('Xóa tệp này?');">
+                        <button type="submit" class="file-chip" style="border:none;cursor:pointer;">Xóa</button>
+                      </form>
+                    {% endif %}
+                  {% else %}
+                    <a href="/{{ f.path or f.storage_path }}" download class="file-chip">{{ _name }}</a>
+                  {% endif %}
+                {% endfor %}
+                {% if t._files|length > 3 %}
+                  <span class="file-more">+ {{ t._files|length - 3 }} tệp khác</span>
+                {% endif %}
+              </div>
+            {% endif %}
+
+            {% if not (t._files is defined and t._files and (t._files|length > 0)) %}
+              {% set _fx = (list_task_report_files(t.id) if (t.id is defined) else []) %}
+              {% if not (_fx and (_fx|length > 0)) %}
+                {% set _fx = (list_task_files(t.id) if (t.id is defined) else []) %}
+              {% endif %}
+              {% if _fx and (_fx|length > 0) %}
+                <div class="file-strip">
+                  <span class="file-strip-icon">📎</span>
+                  {% for f in _fx[:3] %}
+                    {% set _href = (f.path if f.path is defined and f.path else (f.storage_path if f.storage_path is defined and f.storage_path else '')) %}
+                    {% set _name = (f.original_name if f.original_name is defined and f.original_name else (f.name if f.name is defined and f.name else (f.filename if f.filename is defined and f.filename else 'tệp'))) %}
+                    {% set _file_id = (f.id if f.id is defined and f.id else '') %}
+                    {% if _file_id %}
+                      <span class="file-chip">{{ _name }}</span>
+                      <a href="/work-files/{{ _file_id }}/preview" target="_blank" class="file-chip">Xem</a>
+                      <a href="/work-files/{{ _file_id }}/download" class="file-chip">Tải</a>
+                      <form method="post" action="/work-files/{{ _file_id }}/delete" style="display:inline;" onsubmit="return confirm('Xóa tệp này?');">
+                        <button type="submit" class="file-chip" style="border:none;cursor:pointer;">Xóa</button>
+                      </form>
+                    {% else %}
+                      <a href="/{{ _href }}" download class="file-chip">{{ _name }}</a>
+                    {% endif %}
+                  {% endfor %}
+                  {% if _fx|length > 3 %}
+                    <span class="file-more">+ {{ _fx|length - 3 }} tệp khác</span>
+                  {% endif %}
+                </div>
+              {% endif %}
+            {% endif %}
+
+            {% if t._reports is defined and t._reports and (t._reports|length > 0) %}
+              <div class="history-box">
+                <div class="history-title">Lịch sử báo cáo</div>
+                <ul class="history-list">
+                  {% for r in t._reports %}
+                    <li class="history-item">
+                      <div class="history-meta">
+                        {% if r.at %}
+                          <span>{{ r.at if r.at.strftime is not defined else (r.at|format_vn_dt) }}</span>
+                        {% endif %}
+                        {% if r.user %}
+                          <span>— <em>{{ r.user }}</em></span>
+                        {% endif %}
+                      </div>
+                      <div class="history-note">{{ r.note }}</div>
+                      {% if r.files and (r.files|length > 0) %}
+                        <div class="file-strip file-strip--history">
+                          <span class="file-strip-icon">📎</span>
+                          {% for f in r.files[:3] %}
+                            {% set _file_id = (f.id if f.id is defined and f.id else '') %}
+                            {% if _file_id %}
+                              <span class="file-chip">{{ f.name }}</span>
+                              <a href="/work-files/{{ _file_id }}/preview" target="_blank" class="file-chip">Xem</a>
+                              <a href="/work-files/{{ _file_id }}/download" class="file-chip">Tải</a>
+                              <form method="post" action="/work-files/{{ _file_id }}/delete" style="display:inline;" onsubmit="return confirm('Xóa tệp này?');">
+                                <button type="submit" class="file-chip" style="border:none;cursor:pointer;">Xóa</button>
+                              </form>
+                            {% else %}
+                              <a href="/{{ f.path }}" download class="file-chip">{{ f.name }}</a>
+                            {% endif %}
+                          {% endfor %}
+                          {% if r.files|length > 3 %}
+                            <span class="file-more">+ {{ r.files|length - 3 }} tệp khác</span>
+                          {% endif %}
+                        </div>
+                      {% endif %}
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+
+            <div class="action-stack">
+              <form
+                method="post"
+                action="/inbox/{{ t.id }}/report"
+                class="report-form"
+                enctype="multipart/form-data"
+              >
+                <div class="form-caption">Báo cáo thực hiện</div>
+                <textarea name="note" rows="3" placeholder="Nội dung báo cáo..." class="report-note"></textarea>
+
+                <div class="report-tools">
+                  <input type="number" name="progress_pct" min="0" max="100" placeholder="%" class="report-progress">
+                  <input type="file" name="files" multiple class="report-files">
+                  <button type="submit" class="btn btn-primary btn-sm report-submit">Gửi báo cáo</button>
+                </div>
+              </form>
+
+              <form
+                method="post"
+                action="/inbox/{{ t.id }}/complete"
+                class="complete-form"
+                onsubmit="return confirm('Xác nhận hoàn thành công việc này?');"
+              >
+                <button type="submit" class="btn btn-warning btn-sm complete-btn">Hoàn thành</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
+<style>
+.inbox-page .page-head{
+  margin-bottom:16px;
+}
+.inbox-page .page-title{
+  margin:0;
+}
+.inbox-page .inbox-table{
+  margin-top:12px;
+}
+.inbox-page .inbox-table th{
+  white-space:nowrap;
+}
+.inbox-page .inbox-table td{
+  vertical-align:top;
+}
+.inbox-page .cell-tight{
+  white-space:nowrap;
+}
+.inbox-page .cell-content{
+  min-width:260px;
+  line-height:1.6;
+  color:#1F2937;
+}
+.inbox-page .cell-deadline{
+  white-space:nowrap;
+}
+.inbox-page .cell-actions{
+  min-width:500px;
+}
+.inbox-page .text-danger-strong{
+  color:#B91C1C;
+  font-weight:700;
+}
+
+.inbox-page .meta-label{
+  font-weight:700;
+  color:#475569;
+}
+.inbox-page .report-snippet{
+  margin-bottom:8px;
+  padding:8px 10px;
+  border:1px solid #E2E8F0;
+  border-radius:10px;
+  background:#F8FBFD;
+  color:#334155;
+  font-size:12px;
+  line-height:1.5;
+}
+
+.inbox-page .file-strip{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px;
+  margin-bottom:8px;
+  padding:8px 10px;
+  border:1px dashed #CBDCE8;
+  border-radius:10px;
+  background:#FCFEFF;
+}
+.inbox-page .file-strip-icon{
+  font-size:13px;
+}
+.inbox-page .file-chip{
+  display:inline-flex;
+  align-items:center;
+  min-height:28px;
+  padding:4px 10px;
+  border:1px solid #D7E6F1;
+  border-radius:999px;
+  background:#EEF6FB;
+  color:#0F4C81;
+  font-size:12px;
+  font-weight:700;
+  text-decoration:none;
+}
+.inbox-page .file-chip:hover{
+  background:#E2F0F8;
+  text-decoration:none;
+}
+.inbox-page .file-more{
+  color:#64748B;
+  font-size:12px;
+  font-weight:600;
+}
+
+.inbox-page .history-box{
+  margin:10px 0 12px 0;
+  padding:12px;
+  border:1px solid #DCE8F1;
+  border-radius:12px;
+  background:linear-gradient(180deg,#FAFCFE 0%,#F4F9FC 100%);
+}
+.inbox-page .history-title{
+  margin-bottom:8px;
+  color:#0F4C81;
+  font-size:13px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.2px;
+}
+.inbox-page .history-list{
+  margin:0;
+  padding-left:18px;
+}
+.inbox-page .history-item{
+  margin-bottom:8px;
+}
+.inbox-page .history-item:last-child{
+  margin-bottom:0;
+}
+.inbox-page .history-meta{
+  color:#64748B;
+  font-size:12px;
+  margin-bottom:2px;
+}
+.inbox-page .history-note{
+  color:#0F172A;
+  font-size:13px;
+  line-height:1.5;
+}
+.inbox-page .file-strip--history{
+  margin-top:6px;
+  margin-bottom:0;
+}
+
+.inbox-page .action-stack{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.inbox-page .report-form,
+.inbox-page .complete-form{
+  display:block;
+  vertical-align:top;
+}
+.inbox-page .report-form{
+  flex:1 1 420px;
+  min-width:420px;
+  padding:12px;
+  border:1px solid #DCE8F1;
+  border-radius:12px;
+  background:#FBFDFF;
+}
+.inbox-page .form-caption{
+  margin-bottom:6px;
+  color:#0F4C81;
+  font-size:13px;
+  font-weight:800;
+}
+.inbox-page .report-note{
+  width:100%;
+  min-height:88px;
+}
+.inbox-page .report-tools{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  margin-top:8px;
+}
+.inbox-page .report-progress{
+  width:88px;
+}
+.inbox-page .report-files{
+  max-width:240px;
+}
+.inbox-page .report-submit{
+  margin-top:0;
+}
+.inbox-page .complete-form{
+  flex:0 0 auto;
+}
+.inbox-page .complete-btn{
+  margin-top:0;
+  min-width:130px;
+}
+.inbox-page .text-muted{
+  color:#64748B;
+}
+
+@media (max-width: 1200px){
+  .inbox-page .cell-actions{
+    min-width:380px;
+  }
+}
+@media (max-width: 1024px){
+  .inbox-page .cell-actions{
+    min-width:320px;
+  }
+  .inbox-page .report-form{
+    min-width:100%;
+  }
+}
+</style>
+<script>
+  (function () {
+    "use strict";
+
+    window.addEventListener("hvgl:notify", function (event) {
+      var payload = (event && event.detail) || {};
+      if (!payload || payload.module !== "work") {
+        return;
+      }
+
+      if ([
+        "task_assigned",
+        "task_reported",
+        "task_feedback_sent",
+        "task_completed",
+        "task_closed"
+      ].indexOf(payload.type) === -1) {
+        return;
+      }
+
+      try {
+        window.dispatchEvent(new CustomEvent("hvgl:page-soft-refresh-needed", {
+          detail: {
+            module: "work",
+            page: "inbox",
+            type: payload.type || ""
+          }
+        }));
+      } catch (err) {
+        // bỏ qua
+      }
+    });
+  })();
+</script>
+
+{% endblock %}

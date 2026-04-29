@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ app_name }}</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="app-shell">
+<header class="header">
+  <div class="brand">
+    <img src="/static/images/logo.png" class="logo" alt="Logo">
+    <div class="brand-text">
+      <div class="brand-line1">{{ company_name }}</div>
+      <div class="brand-line2">{{ app_name }}</div>
+    </div>
+  </div>
+  <nav class="nav nav-medical">
+  <a href="/dashboard" class="{% if request.url.path == '/dashboard' %}is-active{% endif %}" {% if request.url.path == '/dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
+  {% set work_flags = work_access(request.session) %}
+  {% set work_active = request.url.path.startswith('/plans') or request.url.path.startswith('/tasks') or request.url.path.startswith('/inbox') %}
+  <a href="/plans" class="{% if work_active %}is-active{% endif %}" {% if work_active %}aria-current="page"{% endif %}>Công việc <span id="work-nav-badge" style="display:none;min-width:18px;padding:1px 6px;margin-left:4px;border-radius:10px;background:#dc2626;color:#fff;font-size:12px;font-weight:700;text-align:center;">0</span></a>
+
+  {# ==== CHUẨN HOÁ ROLES TỪ SESSION (có thể là list hoặc string) ==== #}
+  {% set roles0 = request.session.get('roles') %}
+  {% if roles0 is string %}
+    {% set roles_flat = '|' + roles0.replace(';','|').replace(',','|').replace(' ','') + '|' %}
+    {% set roles = roles0.replace(';',',').replace('|',',').split(',') %}
+  {% else %}
+    {% set roles = roles0 or [] %}
+    {% set roles_flat = '|' + (roles | join('|')) + '|' %}
+    {% set roles_flat = roles_flat.replace(' ','') %}
+  {% endif %}
+
+  {% set is_admin = request.session.get('is_admin') %}
+  {% set is_admin_or_leader = request.session.get('is_admin_or_leader') %}
+
+  {% set is_manager =
+      ('|ROLE_TRUONG_PHONG|' in roles_flat) or
+      ('|ROLE_PHO_PHONG|' in roles_flat) or
+      ('|ROLE_TRUONG_KHOA|' in roles_flat) or
+      ('|ROLE_PHO_TRUONG_KHOA|' in roles_flat) or
+      ('|ROLE_DIEU_DUONG_TRUONG|' in roles_flat) or
+      ('|ROLE_KY_THUAT_VIEN_TRUONG|' in roles_flat) or
+      ('|ROLE_TRUONG_DON_VI|' in roles_flat) or
+      ('|ROLE_PHO_DON_VI|' in roles_flat) or
+      ('|ROLE_DIEU_DUONG_TRUONG_DON_VI|' in roles_flat) or
+      ('|ROLE_KY_THUAT_VIEN_TRUONG_DON_VI|' in roles_flat) or
+      ('|ROLE_TO_TRUONG|' in roles_flat) or
+      ('|ROLE_PHO_TO|' in roles_flat) or
+      ('|ROLE_TRUONG_NHOM|' in roles_flat) or
+      ('|ROLE_PHO_NHOM|' in roles_flat)
+  %}
+
+  {% set is_nv =
+      (
+        ('|ROLE_NHAN_VIEN|' in roles_flat) or
+        ('|ROLE_DIEU_DUONG|' in roles_flat) or
+        ('|ROLE_KY_THUAT_VIEN|' in roles_flat) or
+        ('|ROLE_HO_LY|' in roles_flat) or
+        ('|ROLE_BAC_SI|' in roles_flat) or
+        ('|ROLE_QL_CHAT_LUONG|' in roles_flat) or
+        ('|ROLE_QL_KY_THUAT|' in roles_flat) or
+        ('|ROLE_QL_AN_TOAN|' in roles_flat) or
+        ('|ROLE_QL_VAT_TU|' in roles_flat) or
+        ('|ROLE_QL_TRANG_THIET_BI|' in roles_flat) or
+        ('|ROLE_QL_MOI_TRUONG|' in roles_flat) or
+        ('|ROLE_QL_CNTT|' in roles_flat)
+      ) and (not is_manager)
+  %}
+
+  {% set is_board =
+      (
+        ('|ROLE_LANH_DAO|' in roles_flat) or
+        ('|ROLE_TONG_GIAM_DOC|' in roles_flat) or
+        ('|ROLE_PHO_TONG_GIAM_DOC_THUONG_TRUC|' in roles_flat) or
+        ('|ROLE_PHO_TONG_GIAM_DOC|' in roles_flat) or
+        ('|ROLE_GIAM_DOC|' in roles_flat) or
+        ('|ROLE_PHO_GIAM_DOC_TRUC|' in roles_flat) or
+        ('|ROLE_PHO_GIAM_DOC|' in roles_flat) or
+        (is_admin_or_leader and (not is_manager) and (not is_nv))
+      ) and (not is_manager)
+  %}
+
+  {% set is_hdtv_only = is_board and ('|ROLE_ADMIN|' not in roles_flat) %}
+  {% if is_board or is_manager or is_admin or ('|ROLE_ADMIN|' in roles_flat) %}
+    <a href="/evaluation" class="{% if request.url.path.startswith('/evaluation') %}is-active{% endif %}" {% if request.url.path.startswith('/evaluation') %}aria-current="page"{% endif %}>Đánh giá hoàn thành công việc</a>
+  {% endif %}
+    <a href="/chat" class="{% if request.url.path.startswith('/chat') %}is-active{% endif %}" {% if request.url.path.startswith('/chat') %}aria-current="page"{% endif %}>Trao đổi nhóm <span id="chat-group-nav-badge" style="display:none;min-width:18px;padding:1px 6px;margin-left:4px;border-radius:10px;background:#dc2626;color:#fff;font-size:12px;font-weight:700;text-align:center;">0</span></a>
+  <a href="/meetings" class="{% if request.url.path.startswith('/meetings') %}is-active{% endif %}" {% if request.url.path.startswith('/meetings') %}aria-current="page"{% endif %}>
+    Họp trực tuyến
+    <span id="meeting-nav-badge" style="display:none;min-width:18px;padding:1px 6px;margin-left:4px;border-radius:10px;background:#dc2626;color:#fff;font-size:12px;font-weight:700;text-align:center;">0</span>
+  </a>
+  <a href="/leave-schedule" class="{% if request.url.path.startswith('/leave-schedule') %}is-active{% endif %}" {% if request.url.path.startswith('/leave-schedule') %}aria-current="page"{% endif %}>
+    Nghỉ phép - Phân trực
+    <span id="leave-schedule-nav-badge" style="display:none;min-width:18px;padding:1px 6px;margin-left:4px;border-radius:10px;background:#dc2626;color:#fff;font-size:12px;font-weight:700;text-align:center;">0</span>
+  </a>  
+  <a href="/work-positions" class="{% if request.url.path.startswith('/work-positions') %}is-active{% endif %}" {% if request.url.path.startswith('/work-positions') %}aria-current="page"{% endif %}>
+  Phân vị trí làm việc
+  <span id="work-position-nav-badge" style="display:none;min-width:18px;padding:1px 6px;margin-left:4px;border-radius:10px;background:#dc2626;color:#fff;font-size:12px;font-weight:700;text-align:center;">0</span>
+  </a>
+  {% if not is_hdtv_only %}
+    <a href="/files" class="{% if request.url.path.startswith('/files') %}is-active{% endif %}" {% if request.url.path.startswith('/files') %}aria-current="page"{% endif %}>Kho tài liệu</a>
+  {% endif %}
+  {% if work_flags.show_draft_approval %}
+  <a href="/draft-approvals" class="{% if request.url.path.startswith('/draft-approvals') %}is-active{% endif %}" {% if request.url.path.startswith('/draft-approvals') %}aria-current="page"{% endif %}>Phê duyệt dự thảo</a>
+  {% endif %}
+  {% set has_committee_access = false %}
+  {% if current_user_has_committee is defined %}
+    {% set has_committee_access = current_user_has_committee(request.session) %}
+  {% endif %}
+  {% if is_admin or is_admin_or_leader or ('|ROLE_ADMIN|' in roles_flat) or ('|ROLE_LANH_DAO|' in roles_flat) or has_committee_access %}
+    <a href="/committees" class="{% if request.url.path.startswith('/committees') %}is-active{% endif %}" {% if request.url.path.startswith('/committees') %}aria-current="page"{% endif %}>Ban kiêm nhiệm</a>
+  {% endif %}
+  <a href="/units" class="{% if request.url.path.startswith('/units') %}is-active{% endif %}" {% if request.url.path.startswith('/units') %}aria-current="page"{% endif %}>Cơ cấu</a>
+  {% if is_admin or ('|ROLE_ADMIN|' in roles_flat) %}
+    <a href="/grants" class="{% if request.url.path.startswith('/grants') %}is-active{% endif %}" {% if request.url.path.startswith('/grants') %}aria-current="page"{% endif %}>Phân quyền xem</a>
+  {% endif %}
+
+  {% if is_admin or is_admin_or_leader or ('|ROLE_ADMIN|' in roles_flat) or ('|ROLE_LANH_DAO|' in roles_flat) %}
+    {% set pending_approve = pending_user_approval_count() %}
+    <a href="/account/users"
+       class="{% if request.url.path.startswith('/account/users') %}is-active{% endif %}"
+       {% if request.url.path.startswith('/account/users') %}aria-current="page"{% endif %}>
+      Xét duyệt user
+      {% if pending_approve and pending_approve > 0 %}
+        <span id="pending-user-approval-badge" style="display:inline-block;min-width:18px;padding:1px 6px;margin-left:4px;border-radius:10px;background:#dc2626;color:#fff;font-size:12px;font-weight:700;text-align:center;">{{ pending_approve }}</span>
+      {% endif %}
+    </a>
+  {% endif %}
+  
+  <a href="/account" class="{% if request.url.path == '/account' %}is-active{% endif %}" {% if request.url.path == '/account' %}aria-current="page"{% endif %}>Tài khoản</a>
+  <a href="/logout">Đăng xuất</a>
+</nav>
+</header>
+
+{% set work_flags = work_access(request.session) %}
+{% set work_active = request.url.path.startswith('/plans') or request.url.path.startswith('/tasks') or request.url.path.startswith('/inbox') %}
+{% if work_active %}
+<section class="container" style="padding-top:10px;padding-bottom:0;">
+  <nav class="nav nav-medical" style="gap:8px;flex-wrap:wrap;">
+    <a href="/plans" class="{% if request.url.path.startswith('/plans') %}is-active{% endif %}" {% if request.url.path.startswith('/plans') %}aria-current="page"{% endif %}>Công việc thường xuyên</a>
+    {% if work_flags.show_tasks %}
+      <a href="/tasks" class="{% if request.url.path.startswith('/tasks') %}is-active{% endif %}" {% if request.url.path.startswith('/tasks') %}aria-current="page"{% endif %}>
+        Giao thêm việc
+        <span id="work-task-nav-badge" style="display:none;min-width:18px;padding:1px 6px;margin-left:4px;border-radius:10px;background:#dc2626;color:#fff;font-size:12px;font-weight:700;text-align:center;">0</span>
+      </a>
+    {% endif %}
+    {% if work_flags.show_inbox %}
+      <a href="/inbox" class="{% if request.url.path.startswith('/inbox') %}is-active{% endif %}" {% if request.url.path.startswith('/inbox') %}aria-current="page"{% endif %}>
+        Nhận thêm việc
+        <span id="work-inbox-nav-badge" style="display:none;min-width:18px;padding:1px 6px;margin-left:4px;border-radius:10px;background:#dc2626;color:#fff;font-size:12px;font-weight:700;text-align:center;">0</span>
+      </a>
+    {% endif %}
+  </nav>
+</section>
+{% endif %}
+
+{% set leave_active = request.url.path.startswith('/leave-schedule') %}
+{% if leave_active %}
+  {% set leave_block_tab = request.query_params.get('block_tab', '') %}
+  {% set user_block_code = (request.session.get('block_code') or '')|upper %}
+<section class="container" style="padding-top:10px;padding-bottom:0;">
+  <nav class="nav nav-medical" style="gap:8px;flex-wrap:wrap;">
+    {% if user_block_code == 'HANH_CHINH' %}
+      <a href="/leave-schedule?block_tab=HANH_CHINH"
+         class="{% if leave_block_tab == 'HANH_CHINH' %}is-active{% endif %}"
+         {% if leave_block_tab == 'HANH_CHINH' %}aria-current="page"{% endif %}>
+        Khối hành chính
+      </a>
+    {% elif user_block_code == 'CHUYEN_MON' %}
+      <a href="/leave-schedule?block_tab=CHUYEN_MON"
+         class="{% if leave_block_tab == 'CHUYEN_MON' %}is-active{% endif %}"
+         {% if leave_block_tab == 'CHUYEN_MON' %}aria-current="page"{% endif %}>
+        Khối chuyên môn
+      </a>
+    {% else %}
+      <a href="/leave-schedule?block_tab=HANH_CHINH"
+         class="{% if leave_block_tab == 'HANH_CHINH' %}is-active{% endif %}"
+         {% if leave_block_tab == 'HANH_CHINH' %}aria-current="page"{% endif %}>
+        Khối hành chính
+      </a>
+      <a href="/leave-schedule?block_tab=CHUYEN_MON"
+         class="{% if leave_block_tab == 'CHUYEN_MON' %}is-active{% endif %}"
+         {% if leave_block_tab == 'CHUYEN_MON' %}aria-current="page"{% endif %}>
+        Khối chuyên môn
+      </a>
+    {% endif %}
+  </nav>
+</section>
+{% endif %}
+
+<main class="container">
+  {% block content %}{% endblock %}
+</main>
+
+<div id="realtime-soft-refresh-banner" class="realtime-soft-refresh-banner" style="display:none;">
+  <div class="realtime-soft-refresh-message">
+    Có dữ liệu mới. Bấm để tải lại sau khi đã lưu nội dung đang nhập.
+  </div>
+  <div class="realtime-soft-refresh-actions">
+    <button type="button" id="realtime-soft-refresh-button" class="realtime-soft-refresh-button">
+      Tải lại
+    </button>
+    <button type="button" id="realtime-soft-refresh-close" class="realtime-soft-refresh-close" title="Ẩn thông báo">
+      ×
+    </button>
+  </div>
+</div>
+
+<footer class="footer">
+  Ứng dụng được phát triển bởi <i>Võ Như Minh Quang</i>
+</footer>
+{% if request.url.path.startswith('/chat') or request.url.path.startswith('/meetings') %}
+<script src="/static/chat/chat.js"></script>
+{% endif %}
+
+<style>
+  .realtime-soft-refresh-banner {
+    position: fixed;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    z-index: 9999;
+    width: min(720px, calc(100vw - 28px));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid #bfdbfe;
+    border-left: 5px solid #0b4f9c;
+    border-radius: 14px;
+    background: #eff6ff;
+    color: #0f172a;
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.18);
+  }
+
+  .realtime-soft-refresh-message {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
+  .realtime-soft-refresh-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+
+  .realtime-soft-refresh-button {
+    border: none;
+    border-radius: 10px;
+    padding: 8px 12px;
+    background: #0b4f9c;
+    color: #fff;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .realtime-soft-refresh-button:hover {
+    background: #083f7d;
+  }
+
+  .realtime-soft-refresh-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 999px;
+    background: #dbeafe;
+    color: #0f172a;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .realtime-soft-refresh-close:hover {
+    background: #bfdbfe;
+  }
+
+  @media (max-width: 640px) {
+    .realtime-soft-refresh-banner {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .realtime-soft-refresh-actions {
+      justify-content: flex-end;
+    }
+  }
+</style>
+
+<script>
+(function () {
+  const roles = {{ (request.session.get('roles') or [])|tojson }};
+  const roleList = Array.isArray(roles)
+    ? roles.map(v => String(v || '').toUpperCase())
+    : String(roles || '').split(/[;,|]/).map(v => v.trim().toUpperCase()).filter(Boolean);
+
+  const isAdminOrLeader = roleList.includes('ROLE_ADMIN') || roleList.includes('ROLE_LANH_DAO');
+  const path = window.location.pathname || "";
+  const scheme = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${scheme}//${window.location.host}/ws/chat/notify`;
+  const CHAT_GROUP_BADGE_KEY = 'hvgl_chat_group_nav_badge';
+  const MEETING_BADGE_KEY = 'hvgl_meeting_nav_badge';
+  const WORK_BADGE_KEY = 'hvgl_work_nav_badge';
+  const WORK_POSITION_BADGE_KEY = 'hvgl_work_position_nav_badge';
+  const LEAVE_SCHEDULE_BADGE_KEY = 'hvgl_leave_schedule_nav_badge';
+  const currentUserId = {{ (request.session.get('user_id') or '')|tojson }};
+  const isAuthenticated = String(currentUserId || '').trim() !== '';
+  let socket = null;
+  let softRefreshBannerShown = false;
+  let authRealtimeDisabled = !isAuthenticated;
+  const navBadgeTimers = [];
+
+  function isAuthErrorResponse(response) {
+    return response && (response.status === 401 || response.status === 403);
+  }
+
+  function disableRealtimeAndBadgePolling() {
+    authRealtimeDisabled = true;
+
+    while (navBadgeTimers.length) {
+      const timerId = navBadgeTimers.pop();
+      try {
+        window.clearInterval(timerId);
+      } catch (err) {
+        // bỏ qua
+      }
+    }
+
+    if (socket) {
+      try {
+        socket.onclose = null;
+        socket.close();
+      } catch (err) {
+        // bỏ qua
+      }
+      socket = null;
+    }
+  }
+
+  function showSoftRefreshBanner() {
+    const banner = document.getElementById('realtime-soft-refresh-banner');
+    if (!banner) {
+      return;
+    }
+
+    if (softRefreshBannerShown) {
+      return;
+    }
+
+    softRefreshBannerShown = true;
+    banner.style.display = 'flex';
+  }
+
+  function hideSoftRefreshBanner() {
+    const banner = document.getElementById('realtime-soft-refresh-banner');
+    if (!banner) {
+      return;
+    }
+
+    softRefreshBannerShown = false;
+    banner.style.display = 'none';
+  }
+
+   function getChatGroupNavBadge() {
+    return document.getElementById('chat-group-nav-badge');
+  }
+  function setChatGroupNavBadgeCount(count) {
+    const badge = getChatGroupNavBadge();
+    const total = Number(count || 0);
+
+    if (badge) {
+      if (total > 0) {
+        badge.textContent = String(total);
+        badge.style.display = 'inline-block';
+      } else {
+        badge.textContent = '0';
+        badge.style.display = 'none';
+      }
+    }
+
+    try {
+      window.localStorage.setItem(CHAT_GROUP_BADGE_KEY, String(total > 0 ? total : 0));
+    } catch (err) {
+      // bỏ qua
+    }
+  }
+
+  function syncChatGroupNavBadge() {
+    if (path.startsWith('/chat')) {
+      setChatGroupNavBadgeCount(0);
+      return;
+    }
+
+    let count = 0;
+    try {
+      count = Number(window.localStorage.getItem(CHAT_GROUP_BADGE_KEY) || '0');
+    } catch (err) {
+      count = 0;
+    }
+
+    const badge = getChatGroupNavBadge();
+    if (badge) {
+      if (count > 0) {
+        badge.textContent = String(count);
+        badge.style.display = 'inline-block';
+      } else {
+        badge.textContent = '0';
+        badge.style.display = 'none';
+      }
+    }
+  }
+
+  function getWorkNavBadge() {
+    return document.getElementById('work-nav-badge');
+  }
+
+  function setWorkNavBadgeCount(count) {
+    const badge = getWorkNavBadge();
+    const total = Number(count || 0);
+
+    if (badge) {
+      if (total > 0) {
+        badge.textContent = String(total);
+        badge.style.display = 'inline-block';
+      } else {
+        badge.textContent = '0';
+        badge.style.display = 'none';
+      }
+    }
+
+    try {
+      window.localStorage.setItem(WORK_BADGE_KEY, String(total > 0 ? total : 0));
+    } catch (err) {
+      // bỏ qua
+    }
+  }
+
+  function setSmallBadgeCount(elementId, count) {
+    const badge = document.getElementById(elementId);
+    const total = Number(count || 0);
+    if (!badge) {
+      return;
+    }
+
+    if (total > 0) {
+      badge.textContent = String(total);
+      badge.style.display = 'inline-block';
+    } else {
+      badge.textContent = '0';
+      badge.style.display = 'none';
+    }
+  }
+
+  function setWorkSubNavBadgeCounts(taskCount, inboxCount) {
+    setSmallBadgeCount('work-task-nav-badge', taskCount);
+    setSmallBadgeCount('work-inbox-nav-badge', inboxCount);
+  }
+
+  function syncWorkNavBadge() {
+    let count = 0;
+    try {
+      count = Number(window.localStorage.getItem(WORK_BADGE_KEY) || '0');
+    } catch (err) {
+      count = 0;
+    }
+
+    const badge = getWorkNavBadge();
+    if (badge) {
+      if (count > 0) {
+        badge.textContent = String(count);
+        badge.style.display = 'inline-block';
+      } else {
+        badge.textContent = '0';
+        badge.style.display = 'none';
+      }
+    }
+  }
+
+  async function fetchWorkNavBadge() {
+    if (authRealtimeDisabled) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/inbox/api/nav-badge', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin',
+        cache: 'no-store'
+      });
+
+      if (isAuthErrorResponse(response)) {
+        disableRealtimeAndBadgePolling();
+        return;
+      }
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (!data || data.ok !== true) return;
+
+      const taskCount = Number(data.task_owner_count || 0);
+      const inboxCount = Number(data.inbox_task_count || 0);
+      setWorkNavBadgeCount(taskCount + inboxCount);
+      setWorkSubNavBadgeCounts(taskCount, inboxCount);
+    } catch (err) {
+      // bỏ qua
+    }
+  }
+
+  function getMeetingNavBadge() {
+    return document.getElementById('meeting-nav-badge');
+  }
+
+  function setMeetingNavBadgeCount(count) {
+    const badge = getMeetingNavBadge();
+    const total = Number(count || 0);
+
+    if (badge) {
+      if (total > 0) {
+        badge.textContent = String(total);
+        badge.style.display = 'inline-block';
+      } else {
+        badge.textContent = '0';
+        badge.style.display = 'none';
+      }
+    }
+
+    try {
+      window.localStorage.setItem(MEETING_BADGE_KEY, String(total > 0 ? total : 0));
+    } catch (err) {
+      // bỏ qua
+    }
+  }
+
+  function syncMeetingNavBadge() {
+    if (path.startsWith('/meetings')) {
+      setMeetingNavBadgeCount(0);
+      return;
+    }
+
+    let count = 0;
+    try {
+      count = Number(window.localStorage.getItem(MEETING_BADGE_KEY) || '0');
+    } catch (err) {
+      count = 0;
+    }
+
+    const badge = getMeetingNavBadge();
+    if (badge) {
+      if (count > 0) {
+        badge.textContent = String(count);
+        badge.style.display = 'inline-block';
+      } else {
+        badge.textContent = '0';
+        badge.style.display = 'none';
+      }
+    }
+  }
+
+  async function fetchMeetingNavBadge() {
+    if (authRealtimeDisabled) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/meetings/api/nav-badge', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin',
+        cache: 'no-store'
+      });
+
+      if (isAuthErrorResponse(response)) {
+        disableRealtimeAndBadgePolling();
+        return;
+      }
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (!data || data.ok !== true) return;
+
+      setMeetingNavBadgeCount(Number(data.invited_meeting_count || 0));
+    } catch (err) {
+      // bỏ qua
+    }
+  }
+  
+  function getWorkPositionNavBadge() {
+  return document.getElementById('work-position-nav-badge');
+}
+
+function setWorkPositionNavBadgeCount(count) {
+  const badge = getWorkPositionNavBadge();
+  const total = Number(count || 0);
+
+  if (badge) {
+    if (total > 0) {
+      badge.textContent = String(total);
+      badge.style.display = 'inline-block';
+    } else {
+      badge.textContent = '0';
+      badge.style.display = 'none';
+    }
+  }
+
+  try {
+    window.localStorage.setItem(WORK_POSITION_BADGE_KEY, String(total > 0 ? total : 0));
+  } catch (err) {
+    // bỏ qua
+  }
+}
+
+function syncWorkPositionNavBadge() {
+  if (path.startsWith('/work-positions')) {
+    setWorkPositionNavBadgeCount(0);
+    return;
+  }
+
+  let count = 0;
+  try {
+    count = Number(window.localStorage.getItem(WORK_POSITION_BADGE_KEY) || '0');
+  } catch (err) {
+    count = 0;
+  }
+
+  const badge = getWorkPositionNavBadge();
+  if (badge) {
+    if (count > 0) {
+      badge.textContent = String(count);
+      badge.style.display = 'inline-block';
+    } else {
+      badge.textContent = '0';
+      badge.style.display = 'none';
+    }
+  }
+}
+
+  async function fetchWorkPositionNavBadge() {
+    if (authRealtimeDisabled) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/work-positions/api/nav-badge', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin',
+        cache: 'no-store'
+      });
+
+      if (isAuthErrorResponse(response)) {
+        disableRealtimeAndBadgePolling();
+        return;
+      }
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (!data || data.ok !== true) return;
+
+      setWorkPositionNavBadgeCount(Number(data.unread_work_position_count || 0));
+    } catch (err) {
+      // bỏ qua
+    }
+  }
+
+  function getLeaveScheduleNavBadge() {
+    return document.getElementById('leave-schedule-nav-badge');
+  }
+
+  function setLeaveScheduleNavBadgeCount(count) {
+    const badge = getLeaveScheduleNavBadge();
+    const total = Number(count || 0);
+
+    if (badge) {
+      if (total > 0) {
+        badge.textContent = String(total);
+        badge.style.display = 'inline-block';
+      } else {
+        badge.textContent = '0';
+        badge.style.display = 'none';
+      }
+    }
+
+    try {
+      window.localStorage.setItem(LEAVE_SCHEDULE_BADGE_KEY, String(total > 0 ? total : 0));
+    } catch (err) {
+      // bỏ qua
+    }
+  }
+
+  function syncLeaveScheduleNavBadge() {
+    let count = 0;
+    try {
+      count = Number(window.localStorage.getItem(LEAVE_SCHEDULE_BADGE_KEY) || '0');
+    } catch (err) {
+      count = 0;
+    }
+
+    const badge = getLeaveScheduleNavBadge();
+    if (badge) {
+      if (count > 0) {
+        badge.textContent = String(count);
+        badge.style.display = 'inline-block';
+      } else {
+        badge.textContent = '0';
+        badge.style.display = 'none';
+      }
+    }
+  }
+
+  async function fetchLeaveScheduleNavBadge() {
+    if (authRealtimeDisabled) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/leave-schedule/api/nav-badge', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin',
+        cache: 'no-store'
+      });
+
+      if (isAuthErrorResponse(response)) {
+        disableRealtimeAndBadgePolling();
+        return;
+      }
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (!data || data.ok !== true) return;
+
+      setLeaveScheduleNavBadgeCount(Number(data.unread_leave_schedule_count || 0));
+    } catch (err) {
+      // bỏ qua
+    }
+  }
+
+  function updatePendingBadge(count) {
+    const badge = document.getElementById('pending-user-approval-badge');
+    if (!badge) return;
+    const n = Number(count || 0);
+    if (n > 0) {
+      badge.textContent = String(n);
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  function isWorkPage() {
+    return path.startsWith('/plans') || path.startsWith('/tasks') || path.startsWith('/inbox');
+  }
+
+  function isLeaveSchedulePage() {
+    return path.startsWith('/leave-schedule');
+  }
+
+  function isWorkPositionPage() {
+    return path.startsWith('/work-positions');
+  }
+
+  function refreshCurrentUserSessionThenReturn() {
+    const nextUrl = window.location.pathname + window.location.search;
+    window.location.href = '/account/refresh-session?next=' + encodeURIComponent(nextUrl);
+  }
+
+  function markPageHasRealtimeUpdate(moduleName) {
+    try {
+      window.dispatchEvent(new CustomEvent('hvgl:page-soft-refresh-needed', {
+        detail: {
+          module: moduleName || '',
+          path: path,
+          sent_at: new Date().toISOString()
+        }
+      }));
+    } catch (err) {
+      // bỏ qua
+    }
+  }
+
+  function hasActiveTextEditingTarget() {
+    const active = document.activeElement;
+    if (!active) {
+      return false;
+    }
+
+    const tagName = String(active.tagName || '').toLowerCase();
+    if (tagName === 'textarea' || tagName === 'select') {
+      return true;
+    }
+
+    if (tagName === 'input') {
+      const inputType = String(active.getAttribute('type') || 'text').toLowerCase();
+      return !['button', 'submit', 'reset', 'checkbox', 'radio', 'hidden'].includes(inputType);
+    }
+
+    if (active.isContentEditable) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function reloadPageSafely(moduleName) {
+    if (hasActiveTextEditingTarget()) {
+      markPageHasRealtimeUpdate(moduleName);
+      return;
+    }
+
+    window.location.reload();
+  }
+
+  function reloadWorkPageSoon() {
+    if (!isWorkPage()) {
+      return;
+    }
+    reloadPageSafely('work');
+  }
+
+  function reloadLeaveSchedulePageSoon() {
+    if (!isLeaveSchedulePage()) {
+      return;
+    }
+    reloadPageSafely('leave_schedule');
+  }
+
+  function reloadWorkPositionPageSoon() {
+    if (!isWorkPositionPage()) {
+      return;
+    }
+    reloadPageSafely('work_position');
+  }
+
+  async function fetchChatGroupNavBadge() {
+    if (authRealtimeDisabled) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/chat/api/nav-badge', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin',
+        cache: 'no-store'
+      });
+
+      if (isAuthErrorResponse(response)) {
+        disableRealtimeAndBadgePolling();
+        return;
+      }
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (!data || data.ok !== true) return;
+
+      setChatGroupNavBadgeCount(Number(data.new_group_count || 0));
+    } catch (err) {
+      // bỏ qua
+    }
+  }
+  
+  function handlePayload(payload) {
+    if (!payload || typeof payload !== 'object') return;
+
+    try {
+      window.dispatchEvent(new CustomEvent('hvgl:notify', { detail: payload }));
+    } catch (err) {
+      // bỏ qua nếu trình duyệt không hỗ trợ CustomEvent
+    }
+
+    if (isAdminOrLeader && Object.prototype.hasOwnProperty.call(payload, 'pending_approval_count')) {
+      updatePendingBadge(payload.pending_approval_count);
+    }
+
+    if (payload.type === 'group_new_badge' && payload.group_id) {
+      fetchChatGroupNavBadge();
+      return;
+    }
+
+    if (payload.type === 'unread_update' && payload.group_id) {
+      if (typeof payload.is_new_group !== 'undefined') {
+        fetchChatGroupNavBadge();
+      }
+      return;
+    }
+
+    if (payload.module === 'leave_schedule') {
+      fetchLeaveScheduleNavBadge();
+
+      if (path.startsWith('/leave-schedule')) {
+        markPageHasRealtimeUpdate('leave_schedule');
+      }
+
+      return;
+    }
+
+    if (
+      payload.module === 'work' &&
+      [
+        'task_assigned',
+        'task_reported',
+        'task_feedback_sent',
+        'task_completed',
+        'task_closed',
+        'plans_changed',
+        'users_manage_changed',
+        'committee_access_changed'
+      ].indexOf(payload.type) !== -1
+    ) {
+      fetchWorkNavBadge();
+
+      if (
+        payload.type === 'users_manage_changed' &&
+        payload.requires_session_refresh === true &&
+        currentUserId &&
+        String(payload.changed_user_id || '') === String(currentUserId || '')
+      ) {
+        refreshCurrentUserSessionThenReturn();
+        return;
+      }
+
+      if (isWorkPage()) {
+        reloadWorkPageSoon();
+      }
+
+      if (
+        payload.type === 'users_manage_changed' ||
+        payload.type === 'committee_access_changed' ||
+        payload.type === 'plans_changed'
+      ) {
+        if (isLeaveSchedulePage()) {
+          reloadLeaveSchedulePageSoon();
+        }
+        if (isWorkPositionPage()) {
+          reloadWorkPositionPageSoon();
+        }
+      }
+
+      return;
+    }
+
+    if (payload.type === 'users_manage_changed' && path.startsWith('/account/users')) {
+      markPageHasRealtimeUpdate('users_manage');
+    }
+	
+	if (payload.module === 'work_position') {
+      fetchWorkPositionNavBadge();
+
+      if (isWorkPositionPage()) {
+        const immediateRefreshTypes = [
+          'work_position_plan_unit_approved',
+          'work_position_plan_khth_approved',
+          'work_position_adjustment_created',
+          'work_position_adjustment_khth_approved'
+        ];
+
+        if (immediateRefreshTypes.indexOf(String(payload.type || '')) !== -1) {
+          reloadWorkPositionPageSafely();
+        } else {
+          markPageHasRealtimeUpdate('work_position');
+        }
+      }
+
+      return;
+    }
+
+
+    if (payload.module === 'meeting') {
+      if (
+        payload.type === 'meeting_created' ||
+        payload.type === 'meeting_deleted' ||
+        payload.type === 'meeting_schedule_updated' ||
+        payload.type === 'meeting_host_changed' ||
+        payload.type === 'meeting_secretary_changed' ||
+        payload.type === 'meeting_host_updated' ||
+        payload.type === 'meeting_secretary_updated'
+      ) {
+        fetchMeetingNavBadge();
+
+        if (path.startsWith('/meetings')) {
+          markPageHasRealtimeUpdate('meeting');
+        }
+        return;
+      }
+    }
+  }
+
+  function connect() {
+    if (authRealtimeDisabled) {
+      return;
+    }
+
+    socket = new WebSocket(wsUrl);
+    socket.onmessage = function (event) {
+      try {
+        handlePayload(JSON.parse(event.data));
+      } catch (err) {
+        // bỏ qua payload text không phải JSON
+      }
+    };
+    socket.onclose = function () {
+      if (authRealtimeDisabled) {
+        return;
+      }
+      window.setTimeout(connect, 1500);
+    };
+    socket.onerror = function () {
+      try { socket.close(); } catch (e) {}
+    };
+  }
+
+  window.addEventListener('hvgl:page-soft-refresh-needed', function () {
+    showSoftRefreshBanner();
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const reloadButton = document.getElementById('realtime-soft-refresh-button');
+    const closeButton = document.getElementById('realtime-soft-refresh-close');
+
+    if (reloadButton) {
+      reloadButton.addEventListener('click', function () {
+        window.location.reload();
+      });
+    }
+
+    if (closeButton) {
+      closeButton.addEventListener('click', function () {
+        hideSoftRefreshBanner();
+      });
+    }
+  });
+
+  window.addEventListener('storage', function (event) {
+    if (event.key === CHAT_GROUP_BADGE_KEY) {
+      syncChatGroupNavBadge();
+    }
+    if (event.key === MEETING_BADGE_KEY) {
+      syncMeetingNavBadge();
+    }
+    if (event.key === WORK_BADGE_KEY) {
+      syncWorkNavBadge();
+    }
+    if (event.key === WORK_POSITION_BADGE_KEY) {
+      syncWorkPositionNavBadge();
+    }
+    if (event.key === LEAVE_SCHEDULE_BADGE_KEY) {
+      syncLeaveScheduleNavBadge();
+    }
+  });
+
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) {
+      fetchChatGroupNavBadge();
+      fetchMeetingNavBadge();
+      fetchWorkNavBadge();
+      fetchWorkPositionNavBadge();
+      fetchLeaveScheduleNavBadge();
+    }
+  });
+
+  if (isAuthenticated) {
+    syncChatGroupNavBadge();
+    syncMeetingNavBadge();
+    syncWorkNavBadge();
+    syncWorkPositionNavBadge();
+    syncLeaveScheduleNavBadge();
+
+    fetchChatGroupNavBadge();
+    fetchMeetingNavBadge();
+    fetchWorkNavBadge();
+    fetchWorkPositionNavBadge();
+    fetchLeaveScheduleNavBadge();
+
+    // Polling badge chỉ là cơ chế dự phòng khi WebSocket bị hụt/mất kết nối.
+    // Realtime chính vẫn đi qua /ws/chat/notify và các fetch tức thời trong handlePayload().
+    const NAV_BADGE_POLL_INTERVAL_MS = 30000;
+
+    navBadgeTimers.push(window.setInterval(fetchChatGroupNavBadge, NAV_BADGE_POLL_INTERVAL_MS));
+    navBadgeTimers.push(window.setInterval(fetchMeetingNavBadge, NAV_BADGE_POLL_INTERVAL_MS));
+    navBadgeTimers.push(window.setInterval(fetchWorkNavBadge, NAV_BADGE_POLL_INTERVAL_MS));
+    navBadgeTimers.push(window.setInterval(fetchWorkPositionNavBadge, NAV_BADGE_POLL_INTERVAL_MS));
+    navBadgeTimers.push(window.setInterval(fetchLeaveScheduleNavBadge, NAV_BADGE_POLL_INTERVAL_MS));
+
+    connect();
+  }
+})();
+</script>
+</body>
+</html>

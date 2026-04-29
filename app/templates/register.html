@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng ký - {{ app_name }}</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:url('/static/images/login.jpg') center/cover no-repeat fixed;min-height:100vh;display:flex;align-items:center;justify-content:center}.overlay{position:fixed;inset:0;background:rgba(0,0,0,.38)}.wrap{position:relative;z-index:1;width:min(1040px,94vw);background:rgba(255,255,255,.95);border-radius:20px;box-shadow:0 18px 60px rgba(0,0,0,.25);overflow:hidden;display:grid;grid-template-columns:360px 1fr}.left{background:linear-gradient(180deg,#0b3a82,#1656b8);color:#fff;padding:32px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}.left img{width:96px;height:96px;object-fit:contain;margin-bottom:14px}.left .c1{font-weight:800;font-size:30px;line-height:1.2}.left .c2{font-weight:800;font-size:22px;color:#ffe082;margin-top:10px}.right{padding:28px 34px}.title{font-size:28px;font-weight:800;color:#123c74;margin:0 0 6px}.sub{margin:0 0 20px;color:#46556b}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}.full{grid-column:1 / -1}label{display:block;font-weight:700;color:#17375e;margin-bottom:6px}input,select{width:100%;height:44px;padding:10px 12px;border:1px solid #c9d3e0;border-radius:10px;font-size:14px}.msg{padding:10px 12px;border-radius:10px;margin-bottom:14px;font-weight:700}.err{background:#fde8e8;color:#b42318}.ok{background:#e8f7ec;color:#166534}.btn{height:46px;border:none;border-radius:10px;background:#0f5cc0;color:#fff;font-weight:800;cursor:pointer}.links{margin-top:10px}.links a{color:#0f5cc0;text-decoration:none;font-weight:700}.muted{font-size:12px;color:#667085}.live-hint{margin-top:8px;font-size:12px;color:#0f5cc0;font-weight:700}.register-note{margin:10px 0 16px;padding:10px 12px;border-radius:10px;background:#fff7e6;border:1px solid #f7d58b;color:#8a5a00;font-size:13px;line-height:1.5;font-weight:700}.field-error{margin-top:6px;font-size:12px;color:#b42318;font-weight:700}.input-invalid{border-color:#d92d20 !important;background:#fff5f5}.credit{margin-top:10px;font-style:italic;color:#f5d76e;font-weight:700}@media (max-width:860px){.wrap{grid-template-columns:1fr}.left{padding:24px}.right{padding:22px}.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="overlay"></div>
+  <div class="wrap">
+    <div class="left">
+      <img src="/static/images/logo.png" alt="Logo">
+      <div class="c1">{{ company_name }}</div>
+      <div class="c2">{{ app_name }}</div>
+      <div class="credit">Ứng dụng được phát triển bởi Võ Như Minh Quang</div>
+    </div>
+    <div class="right">
+      <h1 class="title">Đăng ký tài khoản</h1>
+      <p class="sub">Người dùng tự chọn đơn vị và vị trí đề xuất. Chỉ khi admin phê duyệt thì đơn vị, vị trí đó mới có hiệu lực.</p>
+      <div class="register-note">Thông báo: Người dùng phải đăng ký đúng Họ và tên. Các vị trí chuyên môn ghi học vị phía trước (Ví dụ BSNT / BSCKI Nguyễn Văn A).</div>
+	  <div class="register-note">Thông báo: Tên đăng nhập có thể đặt theo tên, nhưng bắt buộc phải kèm mã ID cá nhân.</div>
+      <div class="live-hint" id="unit-live-hint">Danh sách đơn vị sẽ tự cập nhật khi có thay đổi mới.</div>
+
+      {% if error %}<div class="msg err">{{ error }}</div>{% endif %}
+      {% if success %}<div class="msg ok">{{ success }}</div>{% endif %}
+
+      <form method="post" action="/auth/register" id="register-form">
+        <div class="grid">
+          <div>
+            <label>Họ và tên</label>
+            <input type="text" name="full_name" value="{{ form_data.get('full_name','') }}" required>
+          </div>
+          <div>
+            <label>Tên đăng nhập</label>
+            <input type="text" name="username" id="username" value="{{ form_data.get('username','') }}" required>
+            <div class="field-error" id="username-error" style="display:none;"></div>
+          </div>
+          <div>
+            <label>Email</label>
+            <input type="email" name="email" value="{{ form_data.get('email','') }}">
+          </div>
+          <div>
+            <label>Điện thoại</label>
+            <input type="text" name="phone" value="{{ form_data.get('phone','') }}">
+          </div>
+          <div>
+            <label>Khối</label>
+            <select name="block_code" id="block_code" required>
+              <option value="">-- Chọn khối --</option>
+              <option value="HANH_CHINH" {% if form_data.get('block_code','') == 'HANH_CHINH' %}selected{% endif %}>Khối hành chính</option>
+              <option value="CHUYEN_MON" {% if form_data.get('block_code','') == 'CHUYEN_MON' %}selected{% endif %}>Khối chuyên môn</option>
+            </select>
+          </div>
+          <div>
+            <label>Phòng / Khoa</label>
+            <select name="unit_id" id="unit_id" required>
+              <option value="">-- Chọn Phòng/Khoa --</option>
+            </select>
+          </div>
+          <div>
+            <label>Tổ / Nhóm / Đơn vị trực thuộc</label>
+            <select name="subunit_id" id="subunit_id" disabled>
+              <option value="">-- Không chọn --</option>
+            </select>
+            <div class="muted">Nếu Phòng/Khoa không có đơn vị trực thuộc thì ô này tự khóa.</div>
+          </div>
+          <div>
+            <label>Vị trí đề xuất</label>
+            <select name="position_code" id="position_code" required>
+              <option value="">-- Chọn vị trí --</option>
+            </select>
+          </div>
+          <div>
+            <label>Mật khẩu</label>
+            <input type="password" name="password" required>
+          </div>
+          <div>
+            <label>Nhập lại mật khẩu</label>
+            <input type="password" name="confirm_password" required>
+          </div>
+          <div class="full">
+            <button type="submit" class="btn">Đăng ký</button>
+            <div class="links"><a href="/auth/login">Quay lại đăng nhập</a></div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let level1Units = {{ level1_units|tojson }};
+    let level2Units = {{ level2_units|tojson }};
+    const positionsByBlock = {
+      HANH_CHINH: {{ positions_hanh_chinh|tojson }},
+      CHUYEN_MON: {{ positions_chuyen_mon|tojson }}
+    };
+    const initial = {{ form_data|tojson }};
+
+    const registerForm = document.getElementById('register-form');
+    const usernameEl = document.getElementById('username');
+    const usernameErrorEl = document.getElementById('username-error');
+	
+    const blockEl = document.getElementById('block_code');
+    const unitEl = document.getElementById('unit_id');
+    const subunitEl = document.getElementById('subunit_id');
+    const positionEl = document.getElementById('position_code');	
+
+    function normalizeUsername(value) {
+      return String(value || '').trim();
+    }
+
+    function isValidUsernameFormat(value) {
+      const v = normalizeUsername(value);
+      return /^[A-Za-zÀ-ỹà-ỹĐđ]+_[0-9]+$/.test(v);
+    }
+
+    function showUsernameError(message) {
+      if (!usernameEl || !usernameErrorEl) return;
+      usernameErrorEl.textContent = message || '';
+      usernameErrorEl.style.display = message ? 'block' : 'none';
+      usernameEl.classList.toggle('input-invalid', !!message);
+    }
+
+    function validateUsernameField() {
+      const value = normalizeUsername(usernameEl ? usernameEl.value : '');
+      if (!value) {
+        showUsernameError('Tên đăng nhập không được để trống.');
+        return false;
+      }
+      if (!isValidUsernameFormat(value)) {
+        showUsernameError('Tên đăng nhập phải đúng định dạng Chữ_Số. Ví dụ: Quang_123.');
+        return false;
+      }
+      showUsernameError('');
+      return true;
+    }
+
+    function fillSelect(el, options, placeholder, selectedValue) {
+      el.innerHTML = '';
+      const first = document.createElement('option');
+      first.value = '';
+      first.textContent = placeholder;
+      el.appendChild(first);
+      (options || []).forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.id || item.code;
+        opt.textContent = item.name || item.label;
+        if ((selectedValue || '') === opt.value) opt.selected = true;
+        el.appendChild(opt);
+      });
+    }
+
+    function refreshUnits() {
+      const block = blockEl.value;
+      const units = level1Units.filter(u => u.block_code === block);
+      fillSelect(unitEl, units, '-- Chọn Phòng/Khoa --', initial.unit_id || '');
+      refreshSubunits();
+      refreshPositions();
+    }
+
+    function refreshSubunits() {
+      const unitId = unitEl.value;
+      const subunits = level2Units.filter(u => u.parent_id === unitId);
+      fillSelect(subunitEl, subunits, '-- Không chọn --', initial.subunit_id || '');
+      subunitEl.disabled = subunits.length === 0;
+      if (subunits.length === 0) subunitEl.value = '';
+    }
+
+    function refreshPositions() {
+      const block = blockEl.value;
+      fillSelect(positionEl, positionsByBlock[block] || [], '-- Chọn vị trí --', initial.position_code || '');
+    }
+
+    blockEl.addEventListener('change', () => {
+      initial.unit_id = '';
+      initial.subunit_id = '';
+      initial.position_code = '';
+      refreshUnits();
+    });
+    unitEl.addEventListener('change', () => {
+      initial.subunit_id = '';
+      refreshSubunits();
+    });
+
+    refreshUnits();
+
+    async function reloadUnitOptions() {
+      try {
+        const res = await fetch('/units/options-public', {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          cache: 'no-store'
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        level1Units = Array.isArray(data.level1_units) ? data.level1_units : [];
+        level2Units = Array.isArray(data.level2_units) ? data.level2_units : [];
+
+        const currentUnitId = unitEl.value || '';
+        const currentSubunitId = subunitEl.value || '';
+        initial.unit_id = currentUnitId;
+        initial.subunit_id = currentSubunitId;
+
+        refreshUnits();
+
+        const liveHint = document.getElementById('unit-live-hint');
+        if (liveHint) {
+          liveHint.textContent = 'Danh sách đơn vị vừa được cập nhật tự động.';
+          clearTimeout(window.__unitHintTimer);
+          window.__unitHintTimer = setTimeout(() => {
+            liveHint.textContent = 'Danh sách đơn vị sẽ tự cập nhật khi có thay đổi mới.';
+          }, 4000);
+        }
+      } catch (err) {
+        console.error('reloadUnitOptions failed', err);
+      }
+    }
+
+    function connectUnitRealtime() {
+      if (typeof EventSource === 'undefined') return;
+      const es = new EventSource('/units/events');
+      es.addEventListener('units_changed', function () {
+        reloadUnitOptions();
+      });
+      es.onerror = function () {
+        try { es.close(); } catch (e) {}
+        setTimeout(connectUnitRealtime, 3000);
+      };
+    }
+
+    connectUnitRealtime();
+    if (usernameEl) {
+      usernameEl.addEventListener('input', validateUsernameField);
+      usernameEl.addEventListener('blur', validateUsernameField);
+    }
+
+    if (registerForm) {
+      registerForm.addEventListener('submit', function (e) {
+        if (!validateUsernameField()) {
+          e.preventDefault();
+          if (usernameEl) usernameEl.focus();
+        }
+      });
+    }
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Cơ cấu tổ chức</h2>
+
+  <form method="post" action="/units/create" class="row">
+    <div>
+      <label>Tên đơn vị</label>
+      <input type="text" name="ten_don_vi" required>
+    </div>
+
+    <div>
+      <label>Loại đơn vị</label>
+      <select name="unit_kind" id="unit_kind" required {% if not can_create %}disabled{% endif %}>
+        {% if create_scope == "ALL" %}
+          <option value="EXECUTIVE">BGĐ</option>
+          <option value="PHONG" selected>Phòng</option>
+          <option value="HANH_CHINH_SUBUNIT">Tổ / Nhóm</option>
+          <option value="KHOA">Khoa</option>
+          <option value="CHUYEN_MON_SUBUNIT">Đơn vị thuộc Khoa</option>
+        {% elif create_scope == "TEAM_ONLY" %}
+          <option value="HANH_CHINH_SUBUNIT" selected>Tổ / Nhóm</option>
+        {% elif create_scope == "KHOA_TEAM_ONLY" %}
+          <option value="CHUYEN_MON_SUBUNIT" selected>Nhóm thuộc Khoa</option>
+        {% else %}
+          <option value="">Không có quyền thêm</option>
+        {% endif %}
+      </select>
+    </div>
+
+    <div>
+      <label>Đơn vị cha</label>
+      <select name="parent_id" id="parent_id" required {% if not can_create %}disabled{% endif %}>
+        <option value="">-- Chọn đơn vị cha --</option>
+      </select>
+    </div>
+
+    <script>
+      window.CREATE_SCOPE = "{{ create_scope or 'NONE' }}";
+
+      window.ROOT_OPTIONS = [
+        {% for x in root_options %}
+          { id: "{{ x.id }}", ten_don_vi: "{{ x.ten_don_vi }}" }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ];
+
+      window.EXECUTIVE_OPTIONS = [
+        {% for x in executive_options %}
+          { id: "{{ x.id }}", ten_don_vi: "{{ x.ten_don_vi }}" }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ];
+
+      window.PHONG_OPTIONS = [
+        {% for x in phong_options %}
+          { id: "{{ x.id }}", ten_don_vi: "{{ x.ten_don_vi }}" }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ];
+
+      window.KHOA_OPTIONS = [
+        {% for x in khoa_options %}
+          { id: "{{ x.id }}", ten_don_vi: "{{ x.ten_don_vi }}" }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ];
+    </script>
+
+    {% if can_create %}
+      <button type="submit">Thêm</button>
+    {% else %}
+      <button type="button" disabled title="Bạn không có quyền thêm đơn vị">Thêm</button>
+    {% endif %}
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Tên đơn vị</th>
+        <th>Loại</th>
+        <th>Đơn vị cha</th>
+        <th>Path</th>
+        <th>Trạng thái</th>
+        <th>Đổi tên</th>
+        <th>Thu hồi</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for u in units %}
+      <tr>
+        <td>{{ u.id }}</td>
+        <td>{{ u.ten_don_vi }}</td>
+        <td>{{ u.unit_type_label }}</td>
+        <td>
+          {% if u.parent_name %}
+            {{ u.parent_name }}
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td>{{ u.path }}</td>
+        <td>{{ u.trang_thai }}</td>
+
+        <td>
+          {% if u.can_manage %}
+            <form method="post" action="/units/rename">
+              <input type="hidden" name="unit_id" value="{{ u.id }}">
+              <input type="text" name="ten_don_vi_moi" placeholder="Tên mới">
+              <button>Đổi</button>
+            </form>
+          {% else %}
+            <input type="text" placeholder="Tên mới" disabled>
+            <button type="button" disabled title="Không có quyền đổi tên">Đổi</button>
+          {% endif %}
+        </td>
+
+        <td>
+          {% if u.can_manage %}
+            <form method="post" action="/units/retire">
+              <input type="hidden" name="unit_id" value="{{ u.id }}">
+              <input type="text" name="reason" placeholder="Lý do">
+              <button>Thu hồi</button>
+            </form>
+          {% else %}
+            <input type="text" placeholder="Lý do" disabled>
+            <button type="button" disabled title="Không có quyền thu hồi">Thu hồi</button>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const unitKind = document.getElementById("unit_kind");
+  const parentId = document.getElementById("parent_id");
+  const createScope = window.CREATE_SCOPE || "NONE";
+
+  const rootOptions = window.ROOT_OPTIONS || [];
+  const executiveOptions = window.EXECUTIVE_OPTIONS || [];
+  const phongOptions = window.PHONG_OPTIONS || [];
+  const khoaOptions = window.KHOA_OPTIONS || [];
+
+  function renderParentOptions(options, placeholder) {
+    if (!parentId) return;
+
+    const currentValue = parentId.value || "";
+    parentId.innerHTML = "";
+
+    const defaultOpt = document.createElement("option");
+    defaultOpt.value = "";
+    defaultOpt.textContent = placeholder;
+    parentId.appendChild(defaultOpt);
+
+    options.forEach(function (item) {
+      const opt = document.createElement("option");
+      opt.value = item.id;
+      opt.textContent = item.ten_don_vi;
+      if (currentValue && currentValue === item.id) {
+        opt.selected = true;
+      }
+      parentId.appendChild(opt);
+    });
+  }
+
+  function syncParentField() {
+    if (!unitKind || !parentId) return;
+
+    const kind = unitKind.value || "";
+
+    if (createScope === "NONE") {
+      parentId.disabled = true;
+      parentId.required = false;
+      renderParentOptions([], "-- Chọn đơn vị cha --");
+      return;
+    }
+
+    if (createScope === "TEAM_ONLY") {
+      unitKind.value = "HANH_CHINH_SUBUNIT";
+      parentId.disabled = false;
+      parentId.required = true;
+      renderParentOptions(phongOptions, "-- Chọn Phòng cha --");
+      return;
+    }
+	
+	if (createScope === "KHOA_TEAM_ONLY") {
+      unitKind.value = "CHUYEN_MON_SUBUNIT";
+      parentId.disabled = false;
+      parentId.required = true;
+      renderParentOptions(khoaOptions, "-- Chọn Khoa cha --");
+      return;
+    }
+
+    if (kind === "EXECUTIVE") {
+      parentId.disabled = false;
+      parentId.required = true;
+      renderParentOptions(rootOptions, "-- Chọn HĐTV --");
+      return;
+    }
+
+    if (kind === "PHONG") {
+      parentId.disabled = false;
+      parentId.required = true;
+      renderParentOptions(rootOptions, "-- Chọn HĐTV --");
+      return;
+    }
+
+    if (kind === "HANH_CHINH_SUBUNIT") {
+      parentId.disabled = false;
+      parentId.required = true;
+      renderParentOptions(phongOptions, "-- Chọn Phòng cha --");
+      return;
+    }
+
+    if (kind === "KHOA") {
+      parentId.disabled = false;
+      parentId.required = true;
+      renderParentOptions(executiveOptions, "-- Chọn BGĐ --");
+      return;
+    }
+
+    if (kind === "CHUYEN_MON_SUBUNIT") {
+      parentId.disabled = false;
+      parentId.required = true;
+      renderParentOptions(khoaOptions, "-- Chọn Khoa cha --");
+      return;
+    }
+
+    parentId.disabled = true;
+    parentId.required = false;
+    renderParentOptions([], "-- Chọn đơn vị cha --");
+  }
+
+  syncParentField();
+  if (unitKind) {
+    unitKind.addEventListener("change", syncParentField);
+  }
+});
+</script>
+{% endblock %}
