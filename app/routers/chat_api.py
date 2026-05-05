@@ -66,6 +66,59 @@ from app.chat.service import (
 router = APIRouter()
 
 
+CHAT_STICKER_STATIC_PREFIX = "/static/sticker/"
+CHAT_STICKER_ALLOWED_EXTENSIONS = {".png", ".webp", ".gif", ".jpg", ".jpeg"}
+
+
+def _chat_sticker_static_dir() -> str:
+    return os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "static", "sticker")
+    )
+
+
+def _normalize_sticker_url(sticker_path: str) -> str:
+    clean_path = str(sticker_path or "").strip().replace("\\", "/")
+    if not clean_path.startswith(CHAT_STICKER_STATIC_PREFIX):
+        return ""
+
+    filename = os.path.basename(clean_path)
+    if not filename or filename != clean_path[len(CHAT_STICKER_STATIC_PREFIX):]:
+        return ""
+
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in CHAT_STICKER_ALLOWED_EXTENSIONS:
+        return ""
+
+    abs_path = os.path.abspath(os.path.join(_chat_sticker_static_dir(), filename))
+    sticker_dir = _chat_sticker_static_dir()
+    if not abs_path.startswith(sticker_dir + os.sep):
+        return ""
+    if not os.path.isfile(abs_path):
+        return ""
+
+    return CHAT_STICKER_STATIC_PREFIX + filename
+
+
+def _list_chat_stickers() -> list[dict]:
+    sticker_dir = _chat_sticker_static_dir()
+    if not os.path.isdir(sticker_dir):
+        return []
+
+    stickers: list[dict] = []
+    for filename in sorted(os.listdir(sticker_dir), key=lambda x: x.lower()):
+        ext = os.path.splitext(filename)[1].lower()
+        if ext not in CHAT_STICKER_ALLOWED_EXTENSIONS:
+            continue
+        if filename.startswith("."):
+            continue
+        stickers.append({
+            "name": os.path.splitext(filename)[0],
+            "filename": filename,
+            "url": CHAT_STICKER_STATIC_PREFIX + filename,
+        })
+    return stickers
+
+
 def _build_reply_preview(reply_msg, group_id: str) -> dict | None:
     if not reply_msg:
         return None
@@ -355,7 +408,98 @@ async def _notify_group_unread_to_members(
             member_user_id,
             json.dumps(payload, ensure_ascii=False),
         )
-        
+
+
+@router.get("/chat/api/stickers")
+def api_list_stickers(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    login_required(request, db)
+    return JSONResponse(
+        {
+            "ok": True,
+            "stickers": _list_chat_stickers(),
+        }
+    )
+
+
+@router.post("/chat/api/messages/sticker")
+async def api_send_sticker_message(
+    request: Request,
+    group_id: str = Form(...),
+    sticker_path: str = Form(...),
+    reply_to_message_id: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    current_user = login_required(request, db)
+
+    clean_group_id = (group_id or "").strip()
+    clean_sticker_path = _normalize_sticker_url(sticker_path)
+    clean_reply_to_message_id = (reply_to_message_id or "").strip()
+
+    if not clean_group_id:
+        raise HTTPException(status_code=400, detail="group_id không được để trống.")
+
+    if not is_group_member(db, clean_group_id, current_user.id):
+        raise HTTPException(status_code=403, detail="Bạn không thuộc nhóm chat này.")
+
+    if not clean_sticker_path:
+        raise HTTPException(status_code=400, detail="Sticker không hợp lệ hoặc không tồn tại.")
+
+    reply_preview = None
+    if clean_reply_to_message_id:
+        reply_msg = get_message_by_id(db, clean_reply_to_message_id)
+        reply_preview = _build_reply_preview(reply_msg, clean_group_id)
+        if not reply_preview:
+            clean_reply_to_message_id = ""
+
+    message = create_message(
+        db,
+        group_id=clean_group_id,
+        sender_user_id=current_user.id,
+        content=clean_sticker_path,
+        message_type="STICKER",
+        reply_to_message_id=clean_reply_to_message_id or None,
+    )
+
+    sender_name = _get_sender_name(current_user)
+
+    message_payload = _build_message_payload(
+        message,
+        sender_name=sender_name,
+        reply_preview=reply_preview,
+        attachments=[],
+    )
+
+    await manager.broadcast_group_text(
+        clean_group_id,
+        json.dumps(
+            {
+                "type": "new_message",
+                "message": message_payload,
+            },
+            ensure_ascii=False,
+        ),
+    )
+
+    await _notify_group_unread_to_members(
+        db,
+        group_id=clean_group_id,
+        sender_user_id=current_user.id,
+    )
+
+    return JSONResponse(
+        {
+            "ok": True,
+            "message": {
+                **message_payload,
+                "is_mine": True,
+            },
+        }
+    )
+
+
 @router.post("/chat/api/groups/create")
 def api_create_group(
     request: Request,

@@ -1312,3 +1312,115 @@
     width: 100%;
   }
 }
+
+/* ===== Sticker chat ===== */
+.chat-sticker-btn.is-active,
+.chat-sticker-btn.is-loading {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.chat-sticker-panel {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: #f8fbff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.chat-sticker-panel[hidden] {
+  display: none !important;
+}
+
+.chat-sticker-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.chat-sticker-panel-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.chat-sticker-close {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  font-size: 14px;
+}
+
+.chat-sticker-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+  max-height: 310px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.chat-sticker-item {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+  padding: 6px;
+  transition: all 0.16s ease;
+}
+
+.chat-sticker-item:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  transform: translateY(-1px);
+}
+
+.chat-sticker-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.chat-sticker-empty {
+  grid-column: 1 / -1;
+  padding: 12px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  color: #64748b;
+  background: #ffffff;
+  font-size: 13px;
+}
+
+.chat-sticker-empty.is-error {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.chat-message-sticker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: min(220px, 48vw);
+}
+
+.chat-message-sticker img {
+  max-width: min(220px, 48vw);
+  max-height: 220px;
+  object-fit: contain;
+  display: block;
+}
+
+.chat-message-bubble:has(.chat-message-sticker) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  padding: 4px;
+}

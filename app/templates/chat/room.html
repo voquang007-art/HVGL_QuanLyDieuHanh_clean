@@ -536,6 +536,10 @@
                     <div class="chat-message-content">
                       {% if msg.recalled %}
                         <em>Tin nhắn đã được thu hồi.</em>
+                      {% elif (msg.message_type or 'TEXT') == 'STICKER' %}
+                        <div class="chat-message-sticker">
+                          <img src="{{ msg.content or '' }}" alt="Sticker">
+                        </div>
                       {% else %}
                         {{ msg.content or "" }}
                       {% endif %}
@@ -694,9 +698,20 @@
             <div class="chat-composer-actions">
               <button type="button" class="chat-outline-btn" id="chatFilePickerButton">Chèn file</button>
               <input type="file" id="chatFileInput" hidden>
+              <button type="button" class="chat-outline-btn chat-sticker-btn" id="chatStickerPickerButton">Sticker</button>
               <button type="submit" class="chat-primary-btn chat-send-btn" id="chatSendButton">
                 Gửi
               </button>
+            </div>
+          </div>
+		  
+		  <div class="chat-sticker-panel" id="chatStickerPanel" hidden>
+            <div class="chat-sticker-panel-header">
+              <div class="chat-sticker-panel-title">Chọn sticker</div>
+              <button type="button" class="chat-icon-btn chat-sticker-close" id="chatStickerCloseButton" title="Đóng">✕</button>
+            </div>
+            <div class="chat-sticker-list" id="chatStickerList">
+              <div class="chat-sticker-empty">Đang tải sticker...</div>
             </div>
           </div>
 

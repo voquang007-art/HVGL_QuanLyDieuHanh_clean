@@ -330,12 +330,29 @@
 
   function buildReplyHtml(message) {
     if (!message.reply_preview) return "";
+    const replyContent = String(message.reply_preview.content || "");
+    const replyText = replyContent.indexOf("/static/sticker/") === 0 ? "[Sticker]" : replyContent;
     return [
       '<div class="chat-reply-preview">',
       '<div class="chat-reply-preview-name">' + escapeHtml(message.reply_preview.sender_name || "Người dùng") + "</div>",
-      '<div class="chat-reply-preview-text">' + escapeHtml(message.reply_preview.content || "") + "</div>",
+      '<div class="chat-reply-preview-text">' + escapeHtml(replyText) + "</div>",
       "</div>"
     ].join("");
+  }
+
+  function isStickerMessage(message) {
+    return String((message && message.message_type) || "TEXT").toUpperCase() === "STICKER";
+  }
+
+  function isSafeStickerUrl(value) {
+    const url = String(value || "").trim();
+    return url.indexOf("/static/sticker/") === 0 && !url.includes("..") && !url.includes("\\");
+  }
+
+  function buildStickerHtml(stickerUrl) {
+    const safeUrl = isSafeStickerUrl(stickerUrl) ? stickerUrl : "";
+    if (!safeUrl) return "";
+    return '<div class="chat-message-sticker"><img src="' + escapeHtml(safeUrl) + '" alt="Sticker"></div>';
   }
 
   function buildReactionBar(message) {
@@ -381,7 +398,11 @@
 
     const contentHtml = message.recalled
       ? "<em>Tin nhắn đã được thu hồi.</em>"
-      : escapeHtml(message.content || "").replace(/\n/g, "<br>");
+      : (
+          isStickerMessage(message)
+            ? buildStickerHtml(message.content || "")
+            : escapeHtml(message.content || "").replace(/\n/g, "<br>")
+        );
 
     return [
       '<div class="' + rowClass + '" data-message-id="' + escapeHtml(message.id || "") + '" data-sender-name="' + escapeHtml(message.sender_name || "Người dùng") + '" data-created-at="' + escapeHtml(message.created_at_text || "") + '" data-message-type="' + escapeHtml(message.message_type || "TEXT") + '" data-is-pinned="' + (message.is_pinned ? '1' : '0') + '">',
@@ -1254,6 +1275,163 @@
     });
   }
 
+  function initStickerPicker() {
+    const button = document.getElementById("chatStickerPickerButton");
+    const panel = document.getElementById("chatStickerPanel");
+    const closeButton = document.getElementById("chatStickerCloseButton");
+    const list = document.getElementById("chatStickerList");
+    const form = document.getElementById("chatComposerForm");
+    const note = document.getElementById("chatComposerNote");
+    const replyIdInput = document.getElementById("chatReplyToMessageId");
+
+    if (!button || !panel || !list || !form) return;
+
+    let stickersLoaded = false;
+    let isSending = false;
+
+    function setNote(message, isError) {
+      if (!note) return;
+      note.textContent = message || "";
+      note.classList.toggle("is-error", !!isError);
+    }
+
+    function setPanelOpen(isOpen) {
+      panel.hidden = !isOpen;
+      button.classList.toggle("is-active", !!isOpen);
+    }
+
+    async function loadStickersOnce() {
+      if (stickersLoaded) return;
+      stickersLoaded = true;
+      list.innerHTML = '<div class="chat-sticker-empty">Đang tải sticker...</div>';
+
+      try {
+        const response = await fetch("/chat/api/stickers", {
+          method: "GET",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "Accept": "application/json"
+          },
+          credentials: "same-origin"
+        });
+        const data = await response.json().catch(function () { return null; });
+        if (!response.ok || !data || !data.ok) {
+          throw new Error((data && data.detail) || "Không tải được danh sách sticker.");
+        }
+
+        const stickers = Array.isArray(data.stickers) ? data.stickers : [];
+        if (!stickers.length) {
+          list.innerHTML = '<div class="chat-sticker-empty">Chưa có sticker trong thư mục /static/sticker.</div>';
+          return;
+        }
+
+        list.innerHTML = stickers.map(function (item) {
+          const url = item && item.url ? String(item.url) : "";
+          const name = item && item.name ? String(item.name) : "Sticker";
+          if (!isSafeStickerUrl(url)) return "";
+          return [
+            '<button type="button" class="chat-sticker-item" data-sticker-path="' + escapeHtml(url) + '" title="' + escapeHtml(name) + '">',
+            '<img src="' + escapeHtml(url) + '" alt="' + escapeHtml(name) + '">',
+            '</button>'
+          ].join("");
+        }).join("");
+      } catch (err) {
+        stickersLoaded = false;
+        list.innerHTML = '<div class="chat-sticker-empty is-error">Không tải được sticker.</div>';
+        setNote(err && err.message ? err.message : "Không tải được sticker.", true);
+      }
+    }
+
+    async function sendSticker(stickerPath) {
+      if (isSending) return;
+      if (!isSafeStickerUrl(stickerPath)) {
+        setNote("Sticker không hợp lệ.", true);
+        return;
+      }
+
+      const groupIdInput = form.querySelector('input[name="group_id"]');
+      const groupId = groupIdInput ? (groupIdInput.value || "").trim() : "";
+      if (!groupId) {
+        setNote("Không xác định được nhóm chat.", true);
+        return;
+      }
+
+      const fd = new FormData();
+      fd.set("group_id", groupId);
+      fd.set("sticker_path", stickerPath);
+      fd.set("reply_to_message_id", replyIdInput ? (replyIdInput.value || "") : "");
+
+      isSending = true;
+      button.classList.add("is-loading");
+      setNote("Đang gửi sticker...", false);
+
+      try {
+        const response = await fetch("/chat/api/messages/sticker", {
+          method: "POST",
+          body: fd,
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "Accept": "application/json"
+          },
+          credentials: "same-origin"
+        });
+        const data = await response.json().catch(function () { return null; });
+        if (!response.ok) {
+          const detail = data && data.detail ? data.detail : "Không gửi được sticker.";
+          throw new Error(detail);
+        }
+        if (!data || !data.ok || !data.message) {
+          throw new Error("Phản hồi gửi sticker không hợp lệ.");
+        }
+
+        appendMessageToRoom(data.message);
+        setPanelOpen(false);
+        setNote("", false);
+        clearReplyState();
+      } catch (err) {
+        setNote(err && err.message ? err.message : "Không gửi được sticker.", true);
+      } finally {
+        isSending = false;
+        button.classList.remove("is-loading");
+      }
+    }
+
+    button.addEventListener("click", async function (event) {
+      event.stopPropagation();
+      const shouldOpen = !!panel.hidden;
+      setPanelOpen(shouldOpen);
+      if (shouldOpen) {
+        await loadStickersOnce();
+      }
+    });
+
+    if (closeButton) {
+      closeButton.addEventListener("click", function (event) {
+        event.stopPropagation();
+        setPanelOpen(false);
+      });
+    }
+
+    panel.addEventListener("click", function (event) {
+      event.stopPropagation();
+      const item = event.target.closest(".chat-sticker-item");
+      if (!item) return;
+      sendSticker(item.getAttribute("data-sticker-path") || "");
+    });
+
+    document.addEventListener("click", function () {
+      if (!panel.hidden) {
+        setPanelOpen(false);
+      }
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && !panel.hidden) {
+        setPanelOpen(false);
+      }
+    });
+  }
+
   function initAjaxComposer() {
     const form = document.getElementById("chatComposerForm");
     const input = document.getElementById("chatComposerInput");
@@ -1538,6 +1716,7 @@
     initPinActions();
     initReactionActions();
     initFileUpload();
+    initStickerPicker();
     initAjaxComposer();
 
     const path = window.location.pathname || "";
