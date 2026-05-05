@@ -278,6 +278,18 @@ def root_redirect(request: Request):
     user_id = request.session.get("user_id") if hasattr(request, "session") else None
     if not user_id:
         return RedirectResponse(url="/auth/login", status_code=303)
+
+    db: Session = SessionLocal()
+    try:
+        user = db.query(Users).filter(Users.id == user_id).first()
+        raw_status = getattr(getattr(user, "status", None), "value", None) or str(getattr(user, "status", "") or "")
+
+        if not user or str(raw_status).upper() != "ACTIVE":
+            request.session.clear()
+            return RedirectResponse(url="/auth/login", status_code=303)
+    finally:
+        db.close()
+
     return RedirectResponse(url="/plans", status_code=303)
 
 # ===== LOGIN/LOGOUT redirect để khớp navbar =====

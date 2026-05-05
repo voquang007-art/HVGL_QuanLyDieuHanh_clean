@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Đăng ký - {{ app_name }}</title>
   <style>
-    *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:url('/static/images/login.jpg') center/cover no-repeat fixed;min-height:100vh;display:flex;align-items:center;justify-content:center}.overlay{position:fixed;inset:0;background:rgba(0,0,0,.38)}.wrap{position:relative;z-index:1;width:min(1040px,94vw);background:rgba(255,255,255,.95);border-radius:20px;box-shadow:0 18px 60px rgba(0,0,0,.25);overflow:hidden;display:grid;grid-template-columns:360px 1fr}.left{background:linear-gradient(180deg,#0b3a82,#1656b8);color:#fff;padding:32px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}.left img{width:96px;height:96px;object-fit:contain;margin-bottom:14px}.left .c1{font-weight:800;font-size:30px;line-height:1.2}.left .c2{font-weight:800;font-size:22px;color:#ffe082;margin-top:10px}.right{padding:28px 34px}.title{font-size:28px;font-weight:800;color:#123c74;margin:0 0 6px}.sub{margin:0 0 20px;color:#46556b}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}.full{grid-column:1 / -1}label{display:block;font-weight:700;color:#17375e;margin-bottom:6px}input,select{width:100%;height:44px;padding:10px 12px;border:1px solid #c9d3e0;border-radius:10px;font-size:14px}.msg{padding:10px 12px;border-radius:10px;margin-bottom:14px;font-weight:700}.err{background:#fde8e8;color:#b42318}.ok{background:#e8f7ec;color:#166534}.btn{height:46px;border:none;border-radius:10px;background:#0f5cc0;color:#fff;font-weight:800;cursor:pointer}.links{margin-top:10px}.links a{color:#0f5cc0;text-decoration:none;font-weight:700}.muted{font-size:12px;color:#667085}.live-hint{margin-top:8px;font-size:12px;color:#0f5cc0;font-weight:700}.register-note{margin:10px 0 16px;padding:10px 12px;border-radius:10px;background:#fff7e6;border:1px solid #f7d58b;color:#8a5a00;font-size:13px;line-height:1.5;font-weight:700}.field-error{margin-top:6px;font-size:12px;color:#b42318;font-weight:700}.input-invalid{border-color:#d92d20 !important;background:#fff5f5}.credit{margin-top:10px;font-style:italic;color:#f5d76e;font-weight:700}@media (max-width:860px){.wrap{grid-template-columns:1fr}.left{padding:24px}.right{padding:22px}.grid{grid-template-columns:1fr}}
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:url('/static/images/login.jpg') center/cover no-repeat fixed;min-height:100vh;display:flex;align-items:center;justify-content:center}.overlay{position:fixed;inset:0;background:rgba(0,0,0,.38)}.wrap{position:relative;z-index:1;width:min(1040px,94vw);background:rgba(255,255,255,.95);border-radius:20px;box-shadow:0 18px 60px rgba(0,0,0,.25);overflow:hidden;display:grid;grid-template-columns:360px 1fr}.left{background:linear-gradient(180deg,#0b3a82,#1656b8);color:#fff;padding:32px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}.left img{width:96px;height:96px;object-fit:contain;margin-bottom:14px}.left .c1{font-weight:800;font-size:30px;line-height:1.2}.left .c2{font-weight:800;font-size:22px;color:#ffe082;margin-top:10px}.right{padding:28px 34px}.title{font-size:28px;font-weight:800;color:#123c74;margin:0 0 6px}.sub{margin:0 0 20px;color:#46556b}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}.password-wrap{position:relative}.password-wrap input{padding-right:48px}.password-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:1px solid #c9d3e0;border-radius:8px;background:#fff;color:#123c74;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}.password-toggle:hover{background:#eef5ff}.password-toggle svg{width:18px;height:18px;display:block;fill:currentColor}.full{grid-column:1 / -1}label{display:block;font-weight:700;color:#17375e;margin-bottom:6px}input,select{width:100%;height:44px;padding:10px 12px;border:1px solid #c9d3e0;border-radius:10px;font-size:14px}.msg{padding:10px 12px;border-radius:10px;margin-bottom:14px;font-weight:700}.err{background:#fde8e8;color:#b42318}.ok{background:#e8f7ec;color:#166534}.btn{height:46px;border:none;border-radius:10px;background:#0f5cc0;color:#fff;font-weight:800;cursor:pointer}.links{margin-top:10px}.links a{color:#0f5cc0;text-decoration:none;font-weight:700}.muted{font-size:12px;color:#667085}.live-hint{margin-top:8px;font-size:12px;color:#0f5cc0;font-weight:700}.register-note{margin:10px 0 16px;padding:10px 12px;border-radius:10px;background:#fff7e6;border:1px solid #f7d58b;color:#8a5a00;font-size:13px;line-height:1.5;font-weight:700}.field-error{margin-top:6px;font-size:12px;color:#b42318;font-weight:700}.input-invalid{border-color:#d92d20 !important;background:#fff5f5}.credit{margin-top:10px;font-style:italic;color:#f5d76e;font-weight:700}@media (max-width:860px){.wrap{grid-template-columns:1fr}.left{padding:24px}.right{padding:22px}.grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -74,12 +74,27 @@
             </select>
           </div>
           <div>
+          <div>
             <label>Mật khẩu</label>
-            <input type="password" name="password" required>
+            <div class="password-wrap">
+              <input type="password" name="password" id="register_password" required>
+              <button type="button" class="password-toggle" data-target="register_password" aria-label="Ẩn/hiện mật khẩu" title="Ẩn/hiện mật khẩu">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+                </svg>
+              </button>
+            </div>
           </div>
           <div>
             <label>Nhập lại mật khẩu</label>
-            <input type="password" name="confirm_password" required>
+            <div class="password-wrap">
+              <input type="password" name="confirm_password" id="register_confirm_password" required>
+              <button type="button" class="password-toggle" data-target="register_confirm_password" aria-label="Ẩn/hiện mật khẩu" title="Ẩn/hiện mật khẩu">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+                </svg>
+              </button>
+            </div>
           </div>
           <div class="full">
             <button type="submit" class="btn">Đăng ký</button>
@@ -106,7 +121,16 @@
     const blockEl = document.getElementById('block_code');
     const unitEl = document.getElementById('unit_id');
     const subunitEl = document.getElementById('subunit_id');
-    const positionEl = document.getElementById('position_code');	
+    const positionEl = document.getElementById('position_code');
+
+    document.querySelectorAll('.password-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const targetId = btn.getAttribute('data-target');
+        const input = document.getElementById(targetId);
+        if (!input) return;
+        input.type = input.type === 'password' ? 'text' : 'password';
+      });
+    });	
 
     function normalizeUsername(value) {
       return String(value || '').trim();
