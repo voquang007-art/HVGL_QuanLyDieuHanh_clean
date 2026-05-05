@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Đăng ký - {{ app_name }}</title>
   <style>
-    *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:url('/static/images/login.jpg') center/cover no-repeat fixed;min-height:100vh;display:flex;align-items:center;justify-content:center}.overlay{position:fixed;inset:0;background:rgba(0,0,0,.38)}.wrap{position:relative;z-index:1;width:min(1040px,94vw);background:rgba(255,255,255,.95);border-radius:20px;box-shadow:0 18px 60px rgba(0,0,0,.25);overflow:hidden;display:grid;grid-template-columns:360px 1fr}.left{background:linear-gradient(180deg,#0b3a82,#1656b8);color:#fff;padding:32px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}.left img{width:96px;height:96px;object-fit:contain;margin-bottom:14px}.left .c1{font-weight:800;font-size:30px;line-height:1.2}.left .c2{font-weight:800;font-size:22px;color:#ffe082;margin-top:10px}.right{padding:28px 34px}.title{font-size:28px;font-weight:800;color:#123c74;margin:0 0 6px}.sub{margin:0 0 20px;color:#46556b}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}.password-wrap{position:relative}.password-wrap input{padding-right:48px}.password-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:1px solid #c9d3e0;border-radius:8px;background:#fff;color:#123c74;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}.password-toggle:hover{background:#eef5ff}.password-toggle svg{width:18px;height:18px;display:block;fill:currentColor}.full{grid-column:1 / -1}label{display:block;font-weight:700;color:#17375e;margin-bottom:6px}input,select{width:100%;height:44px;padding:10px 12px;border:1px solid #c9d3e0;border-radius:10px;font-size:14px}.msg{padding:10px 12px;border-radius:10px;margin-bottom:14px;font-weight:700}.err{background:#fde8e8;color:#b42318}.ok{background:#e8f7ec;color:#166534}.btn{height:46px;border:none;border-radius:10px;background:#0f5cc0;color:#fff;font-weight:800;cursor:pointer}.links{margin-top:10px}.links a{color:#0f5cc0;text-decoration:none;font-weight:700}.muted{font-size:12px;color:#667085}.live-hint{margin-top:8px;font-size:12px;color:#0f5cc0;font-weight:700}.register-note{margin:10px 0 16px;padding:10px 12px;border-radius:10px;background:#fff7e6;border:1px solid #f7d58b;color:#8a5a00;font-size:13px;line-height:1.5;font-weight:700}.field-error{margin-top:6px;font-size:12px;color:#b42318;font-weight:700}.input-invalid{border-color:#d92d20 !important;background:#fff5f5}.credit{margin-top:10px;font-style:italic;color:#f5d76e;font-weight:700}@media (max-width:860px){.wrap{grid-template-columns:1fr}.left{padding:24px}.right{padding:22px}.grid{grid-template-columns:1fr}}
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:url('/static/images/login.jpg') center/cover no-repeat fixed;min-height:100vh;display:flex;align-items:center;justify-content:center}.overlay{position:fixed;inset:0;background:rgba(0,0,0,.38)}.wrap{position:relative;z-index:1;width:min(1040px,94vw);background:rgba(255,255,255,.95);border-radius:20px;box-shadow:0 18px 60px rgba(0,0,0,.25);overflow:hidden;display:grid;grid-template-columns:360px 1fr}.left{background:linear-gradient(180deg,#0b3a82,#1656b8);color:#fff;padding:32px 26px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}.left img{width:96px;height:96px;object-fit:contain;margin-bottom:18px}.left .c1{font-weight:900;font-size:27px;line-height:1.18;letter-spacing:.3px;text-transform:uppercase}.left .c1 span{display:block}.left .c2{font-weight:900;font-size:22px;line-height:1.25;color:#ffe082;margin-top:18px;text-transform:uppercase}.left .c2 span{display:block}.right{padding:28px 34px}.title{font-size:28px;font-weight:800;color:#123c74;margin:0 0 6px}.sub{margin:0 0 20px;color:#46556b}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}.password-wrap{position:relative}.password-wrap input{padding-right:48px}.password-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:1px solid #c9d3e0;border-radius:8px;background:#fff;color:#123c74;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}.password-toggle:hover{background:#eef5ff}.password-toggle svg{width:18px;height:18px;display:block;fill:currentColor}.full{grid-column:1 / -1}label{display:block;font-weight:700;color:#17375e;margin-bottom:6px}input,select{width:100%;height:44px;padding:10px 12px;border:1px solid #c9d3e0;border-radius:10px;font-size:14px}.msg{padding:10px 12px;border-radius:10px;margin-bottom:14px;font-weight:700}.err{background:#fde8e8;color:#b42318}.ok{background:#e8f7ec;color:#166534}.btn{height:46px;border:none;border-radius:10px;background:#0f5cc0;color:#fff;font-weight:800;cursor:pointer}.links{margin-top:10px}.links a{color:#0f5cc0;text-decoration:none;font-weight:700}.muted{font-size:12px;color:#667085}.live-hint{margin-top:8px;font-size:12px;color:#0f5cc0;font-weight:700}.register-note{margin:10px 0 16px;padding:10px 12px;border-radius:10px;background:#fff7e6;border:1px solid #f7d58b;color:#8a5a00;font-size:13px;line-height:1.5;font-weight:700}.field-error{margin-top:6px;font-size:12px;color:#b42318;font-weight:700}.input-invalid{border-color:#d92d20 !important;background:#fff5f5}.credit{margin-top:10px;font-style:italic;color:#f5d76e;font-weight:700}@media (max-width:860px){.wrap{grid-template-columns:1fr}.left{padding:24px}.right{padding:22px}.grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -13,8 +13,15 @@
   <div class="wrap">
     <div class="left">
       <img src="/static/images/logo.png" alt="Logo">
-      <div class="c1">{{ company_name }}</div>
-      <div class="c2">{{ app_name }}</div>
+      <div class="c1">
+        <span>BỆNH VIỆN</span>
+        <span>HÙNG VƯƠNG</span>
+        <span>GIA LAI</span>
+      </div>
+      <div class="c2">
+        <span>ỨNG DỤNG QUẢN LÝ,</span>
+        <span>ĐIỀU HÀNH CÔNG VIỆC</span>
+      </div>
       <div class="credit">Ứng dụng được phát triển bởi Võ Như Minh Quang</div>
     </div>
     <div class="right">
@@ -73,7 +80,6 @@
               <option value="">-- Chọn vị trí --</option>
             </select>
           </div>
-          <div>
           <div>
             <label>Mật khẩu</label>
             <div class="password-wrap">
